@@ -17,8 +17,15 @@ dependencies = [
   "ibm-cos-sdk>=2.13",
   "tenacity>=8.2",
   "python-dotenv>=1.0",
-  "requests>=2.31"
+  "requests>=2.31",
+  "rank-bm25>=0.2.2"
 ]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.setuptools.package-data]
+app = ["**/*.py"]
 
 [tool.uv]
 dev-dependencies = []

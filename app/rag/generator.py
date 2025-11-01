@@ -9,8 +9,10 @@ from app.config import Settings
 
 
 SYSTEM_PROMPT = (
-    "You are a helpful assistant. Answer only using the provided context. "
-    "If the answer is not in the context, say you don't know."
+    "You are a research assistant providing detailed, comprehensive answers to researchers. "
+    "Answer only using the provided context. If the answer is not in the context, say you don't know. "
+    "Provide thorough, detailed information including specific details, numbers, names, dates, methodologies, "
+    "and nuanced explanations. Do not oversimplify - researchers need complete and accurate information."
 )
 
 
@@ -32,6 +34,9 @@ class GeneratorClient:
         joined = "\n\n".join(contexts)
         return (
             f"{SYSTEM_PROMPT}\n\nQuestion: {question}\n\nContext:\n{joined}\n\n"
+            "Provide a comprehensive, detailed answer suitable for researchers. Include specific details, "
+            "exact figures, methodologies, findings, limitations, and relevant nuances from the context. "
+            "Do not oversimplify - aim for thoroughness and precision. "
             "Provide only your answer directly without repeating the question, context, or any labels like 'Answer:' or 'Source:'. "
             "Just provide the answer text itself."
         )
@@ -39,10 +44,12 @@ class GeneratorClient:
     def build_compression_prompt(self, question: str, contexts: List[str]) -> str:
         joined = "\n\n".join(contexts)
         return (
-            "Compress the following context into a short, factual summary strictly relevant to the question. "
-            "Keep names, figures, and key claims. Do not speculate.\n\n"
+            "Compress the following context into a comprehensive summary relevant to the question. "
+            "Retain all important details: names, figures, dates, methodologies, findings, statistics, "
+            "limitations, and nuanced claims. Preserve specificity - do not oversimplify. "
+            "Do not speculate.\n\n"
             f"Question: {question}\n\nContext:\n{joined}\n\n"
-            "Return only the compressed summary."
+            "Return only the compressed summary with all relevant details preserved."
         )
 
     def clean_output(self, text: str) -> str:
@@ -90,7 +97,7 @@ class GeneratorClient:
         prompt = self.build_prompt(question, contexts)
         params = {
             GenParams.TEMPERATURE: float(temperature),
-            GenParams.MAX_NEW_TOKENS: 2048,
+            GenParams.MAX_NEW_TOKENS: 4096,  # Increased for detailed research answers
             GenParams.TRUNCATE_INPUT_TOKENS: 0,
             GenParams.RETURN_OPTIONS: {"input_tokens": True, "generated_tokens": True},
         }
