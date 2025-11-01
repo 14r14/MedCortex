@@ -14,6 +14,8 @@ from app.rag.faiss_store import FaissStore
 from app.rag.bm25_store import BM25Store
 from app.rag.reranker import Reranker
 from app.rag.generator import GeneratorClient
+from app.rag.table_extractor import extract_tables_from_pdf, store_tables_in_session
+from app.rag.iterative_agent import IterativeAgent
 
 try:
     import streamlit as st
@@ -143,6 +145,15 @@ class IngestionPipeline:
     
     def ingest_pdf(self, doc_id: str, filename: str, source_uri: str) -> int:
         file_stream = self._fetch_cos_stream(source_uri)
+        
+        # Extract tables for TableRAG
+        tables = extract_tables_from_pdf(file_stream, doc_id)
+        if tables:
+            store_tables_in_session(tables)
+            logger.info(f"Extracted {len(tables)} tables from {filename}")
+        
+        # Reset stream for text extraction
+        file_stream.seek(0)
         pages = extract_text_per_page(file_stream)
         non_empty_pages = [p for p in pages if p.strip()]
         chunks = chunk_pages(non_empty_pages, self.settings.chunk_size, self.settings.chunk_overlap)
@@ -202,6 +213,7 @@ class QueryPipeline:
         self.bm25 = BM25Store(session_key="faiss_store")
         self.reranker = Reranker(settings)
         self.gen = GeneratorClient(settings)
+        self.iterative_agent = IterativeAgent(settings)
 
     def _reciprocal_rank_fusion(self, semantic_hits: List[dict], keyword_hits: List[dict], k: int = 60) -> List[dict]:
         """Combine semantic and keyword search results using Reciprocal Rank Fusion (RRF)."""
@@ -233,8 +245,67 @@ class QueryPipeline:
         fused_hits = [hit_map[hit_id] for hit_id in sorted_ids[:25]]
         return fused_hits
 
+    def _is_complex_query(self, question: str) -> bool:
+        """
+        Detect if a query is complex enough to require iterative reasoning.
+        
+        Complex queries typically:
+        - Ask multiple related questions (e.g., "What is X and what are its Y?")
+        - Reference multiple documents/contexts
+        - Require multi-hop reasoning (e.g., "What is the standard treatment for condition A as described in paper B?")
+        """
+        # Keywords that suggest complexity
+        complexity_indicators = [
+            " and ", " also ", " furthermore ", " additionally ",
+            " what ", " how ", " why ", " compare ", " difference ",
+            " as described ", " according to ", " in paper ", " in document ",
+            " standard ", " treatment ", " side effects ", " outcomes "
+        ]
+        
+        question_lower = question.lower()
+        
+        # Count question words (multiple questions suggest complexity)
+        question_words = ["what", "how", "why", "when", "where", "which", "who"]
+        question_count = sum(1 for word in question_words if word in question_lower)
+        
+        # Count complexity indicators
+        indicator_count = sum(1 for indicator in complexity_indicators if indicator in question_lower)
+        
+        # Consider complex if:
+        # - Multiple question words
+        # - Multiple complexity indicators
+        # - Question is long (> 50 chars) with indicators
+        is_complex = (
+            question_count >= 2 or
+            indicator_count >= 2 or
+            (len(question) > 50 and indicator_count >= 1)
+        )
+        
+        return is_complex
+    
     def answer(self, question: str, allowed_doc_ids: Optional[List[str]] = None) -> tuple[str, List[str]]:
-        """Answer question with optional filtering by document IDs (session-based)."""
+        """
+        Answer question with optional filtering by document IDs (session-based).
+        
+        Uses iterative agent for complex queries, standard RAG for simple queries.
+        """
+        # Detect if query is complex
+        use_iterative = self._is_complex_query(question)
+        
+        if use_iterative:
+            logger.info("Using iterative agentic framework for complex query")
+            try:
+                answer, sources = self.iterative_agent.answer_iteratively(
+                    question, 
+                    allowed_doc_ids=allowed_doc_ids,
+                    max_iterations=3
+                )
+                return answer, list(dict.fromkeys(sources))
+            except Exception as e:
+                logger.warning(f"Iterative agent failed: {e}, falling back to standard RAG")
+                # Fall through to standard RAG
+        
+        # Standard RAG pipeline for simple queries
         # Step 1: Hybrid Search - Run both semantic (FAISS) and keyword (BM25) search
         q_emb = self.embed.embed_query(question)
         semantic_hits = self.vs.search(q_emb, top_k=25, allowed_doc_ids=allowed_doc_ids)
@@ -259,7 +330,21 @@ class QueryPipeline:
         for h in reranked_hits:
             sources.append(h.get("source_uri", ""))
         
-        # Step 5: Two-step generation - compress then generate
+        # Step 5: Check if query is about tables
+        from app.rag.table_extractor import get_tables_for_docs
+        from app.rag.table_reasoner import TableReasoner
+        table_reasoner = TableReasoner(self.settings)
+        tables = get_tables_for_docs(allowed_doc_ids or [])
+        
+        table_answer = None
+        if tables and table_reasoner.is_table_query(question, tables):
+            logger.info("Query appears to be about tabular data, performing table reasoning")
+            table_answer = table_reasoner.reason_over_tables(question, tables)
+            if table_answer:
+                # Combine table answer with text contexts
+                contexts.append(f"[Table Data] {table_answer}")
+        
+        # Step 6: Two-step generation - compress then generate
         try:
             summary = self.gen.compress_context(question, contexts, temperature=0.0)
             effective_contexts = [summary] if summary else contexts

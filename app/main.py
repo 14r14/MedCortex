@@ -82,12 +82,12 @@ def inject_custom_css():
         
         [data-testid="stSidebar"] .stMarkdown h2,
         [data-testid="stSidebar"] .stMarkdown h3 {
-            color: #ffffff;
+            color: #ffffff !important;
         }
         
         [data-testid="stSidebar"] .stMarkdown,
         [data-testid="stSidebar"] p {
-            color: #e5e5e5;
+            color: #e5e5e5 !important;
         }
         
         /* Sidebar dividers */
@@ -517,7 +517,57 @@ def inject_custom_css():
         /* Hide the Streamlit header and footer */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-        header {visibility: hidden;}
+        header {background-color: transparent !important;}
+        
+        /* Ensure sidebar toggle button remains visible and functional */
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="stSidebarCollapseButton"],
+        [aria-label*="sidebar"][aria-label*="toggle"],
+        button[aria-label*="Open sidebar"],
+        button[aria-label*="Close sidebar"] {
+            visibility: visible !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 999 !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0.5rem !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        }
+        
+        /* Ensure sidebar toggle button icon is visible */
+        [data-testid="stSidebarCollapseButton"] svg,
+        button[data-testid="stSidebarCollapseButton"] svg,
+        [data-testid="stSidebarCollapseButton"]::before,
+        [data-testid="stSidebarCollapseButton"]::after {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        /* Custom sidebar toggle icon styling */
+        [data-testid="stSidebarCollapseButton"] .custom-sidebar-icon {
+            width: 20px !important;
+            height: 20px !important;
+            fill: currentColor !important;
+            stroke: currentColor !important;
+            color: var(--dark-gray) !important;
+        }
+        
+        /* Hide text/aria-label and show icon */
+        [data-testid="stSidebarCollapseButton"] .sr-only,
+        [data-testid="stSidebarCollapseButton"] [class*="sr-only"],
+        button[aria-label*="sidebar"] .sr-only {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
         
         </style>
         
@@ -790,6 +840,88 @@ def inject_custom_css():
         
         // Also run periodically to catch Streamlit renders
         setInterval(fixFileSizeAlignment, 500);
+        
+        // Replace sidebar toggle button icon with custom icon
+        function replaceSidebarIcon() {
+            const sidebarButton = document.querySelector('[data-testid="stSidebarCollapseButton"]');
+            if (!sidebarButton) return;
+            
+            // Check if already replaced
+            if (sidebarButton.querySelector('.custom-sidebar-icon')) return;
+            
+            // Remove existing SVG icons
+            const existingSvgs = sidebarButton.querySelectorAll('svg');
+            existingSvgs.forEach(svg => svg.remove());
+            
+            // Create custom menu icon SVG (hamburger/three lines)
+            const customIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            customIcon.setAttribute('class', 'custom-sidebar-icon');
+            customIcon.setAttribute('viewBox', '0 0 24 24');
+            customIcon.setAttribute('width', '24');
+            customIcon.setAttribute('height', '24');
+            customIcon.setAttribute('fill', 'none');
+            customIcon.setAttribute('stroke', 'currentColor');
+            customIcon.setAttribute('stroke-width', '2');
+            customIcon.setAttribute('stroke-linecap', 'round');
+            customIcon.setAttribute('stroke-linejoin', 'round');
+            
+            // Create three horizontal lines (hamburger menu icon)
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', '3');
+            line1.setAttribute('y1', '6');
+            line1.setAttribute('x2', '21');
+            line1.setAttribute('y2', '6');
+            
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', '3');
+            line2.setAttribute('y1', '12');
+            line2.setAttribute('x2', '21');
+            line2.setAttribute('y2', '12');
+            
+            const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line3.setAttribute('x1', '3');
+            line3.setAttribute('y1', '18');
+            line3.setAttribute('x2', '21');
+            line3.setAttribute('y2', '18');
+            
+            customIcon.appendChild(line1);
+            customIcon.appendChild(line2);
+            customIcon.appendChild(line3);
+            
+            // Clear button content and add custom icon
+            sidebarButton.innerHTML = '';
+            sidebarButton.appendChild(customIcon);
+            
+            // Hide any text/aria-label
+            const srOnly = sidebarButton.querySelector('.sr-only');
+            if (srOnly) {
+                srOnly.style.cssText = 'position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;';
+            }
+        }
+        
+        // Run on load and after mutations
+        function initSidebarIcon() {
+            replaceSidebarIcon();
+            
+            // Watch for Streamlit updates
+            const iconObserver = new MutationObserver(() => {
+                replaceSidebarIcon();
+            });
+            
+            iconObserver.observe(document.body, { childList: true, subtree: true });
+            
+            // Also run periodically to catch Streamlit renders
+            setInterval(replaceSidebarIcon, 500);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSidebarIcon);
+        } else {
+            initSidebarIcon();
+        }
+        
+        // Wait for Streamlit to be ready
+        waitForStreamlit(initSidebarIcon);
         </script>
         
         """,

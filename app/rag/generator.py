@@ -12,7 +12,9 @@ SYSTEM_PROMPT = (
     "You are a research assistant providing detailed, comprehensive answers to researchers. "
     "Answer only using the provided context. If the answer is not in the context, say you don't know. "
     "Provide thorough, detailed information including specific details, numbers, names, dates, methodologies, "
-    "and nuanced explanations. Do not oversimplify - researchers need complete and accurate information."
+    "and nuanced explanations. Do not oversimplify - researchers need complete and accurate information. "
+    "Do NOT include placeholder citations like [Source 1], [Source 2], [Table Data], etc. in your answer. "
+    "Sources will be listed separately - just provide the answer text itself."
 )
 
 
@@ -38,7 +40,8 @@ class GeneratorClient:
             "exact figures, methodologies, findings, limitations, and relevant nuances from the context. "
             "Do not oversimplify - aim for thoroughness and precision. "
             "Provide only your answer directly without repeating the question, context, or any labels like 'Answer:' or 'Source:'. "
-            "Just provide the answer text itself."
+            "Do NOT include placeholder citations like [Source 1], [Source 2], [Table Data], (Source 1, Source 2), etc. "
+            "Just provide the answer text itself - sources will be listed separately."
         )
 
     def build_compression_prompt(self, question: str, contexts: List[str]) -> str:
@@ -56,6 +59,11 @@ class GeneratorClient:
         """Remove prompt artifacts and structure labels from model output."""
         cleaned = text
         
+        # Remove placeholder source citations like [Source 1], [Source 2], etc.
+        cleaned = re.sub(r'\[Source\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\[Table\s+Data\]', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\(Source\s+\d+(?:,\s*Source\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
+        
         # Split by common prompt patterns to extract just the actual answers
         # Pattern: "Answer: ..." followed by other prompt elements
         parts = re.split(r"Answer:\s*", cleaned, flags=re.IGNORECASE)
@@ -68,6 +76,9 @@ class GeneratorClient:
         # Remove "Source: Context" lines (standalone or inline)
         cleaned = re.sub(r"^Source:\s*Context\s*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE)
         cleaned = re.sub(r"Source:\s*Context\s*", "", cleaned, flags=re.IGNORECASE)
+        
+        # Remove "Sources:" section at the end if present
+        cleaned = re.sub(r"\n\s*Sources?\s*:.*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
         
         # Remove "Question:" sections and everything after them
         cleaned = re.sub(r"Question:\s*.*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
@@ -133,6 +144,49 @@ class GeneratorClient:
                 raw_answer = str(data)
         
         # Clean the output to remove prompt artifacts
+        return self.clean_output(raw_answer)
+
+    def generate_from_prompt(self, prompt: str, temperature: float = 0.2) -> str:
+        """
+        Generate text directly from a raw prompt string.
+        
+        Useful for special cases like query decomposition, synthesis, etc.
+        that need custom prompt formatting.
+        """
+        params = {
+            GenParams.TEMPERATURE: float(temperature),
+            GenParams.MAX_NEW_TOKENS: 4096,
+            GenParams.TRUNCATE_INPUT_TOKENS: 0,
+            GenParams.RETURN_OPTIONS: {"input_tokens": True, "generated_tokens": True},
+        }
+
+        raw_answer = ""
+        try:
+            stream_resp = self.client.generate_text_stream(prompt=prompt, params=params)
+            text_parts: List[str] = []
+            for chunk in stream_resp:
+                text_parts.append(str(chunk))
+            raw_answer = "".join(text_parts).strip()
+        except Exception:
+            pass
+
+        if not raw_answer:
+            response = self.client.generate(prompt=prompt, params=params)
+            data = response.get_result() if hasattr(response, "get_result") else response
+            if isinstance(data, str):
+                raw_answer = data
+            elif isinstance(data, dict):
+                if "results" in data and data["results"]:
+                    raw_answer = data["results"][0].get("generated_text", "")
+                elif "generated_text" in data:
+                    raw_answer = data["generated_text"]
+                else:
+                    raw_answer = str(data)
+            elif hasattr(response, "generated_text"):
+                raw_answer = response.generated_text
+            else:
+                raw_answer = str(data)
+        
         return self.clean_output(raw_answer)
 
     def compress_context(self, question: str, contexts: List[str], temperature: float = 0.0) -> str:
