@@ -1,7 +1,7 @@
 import io
 import uuid
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from ibm_watsonx_ai.wml_client_error import ApiRequestFailure
 
@@ -15,6 +15,12 @@ from app.rag.bm25_store import BM25Store
 from app.rag.reranker import Reranker
 from app.rag.generator import GeneratorClient
 
+try:
+    import streamlit as st
+except ImportError:
+    # For testing outside Streamlit
+    st = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,9 +29,9 @@ class IngestionPipeline:
         self.settings = settings
         self.cos = COSClient(settings)
         self.embed = EmbeddingClient(settings)
-        self.vs = FaissStore(settings)
-        # Initialize BM25 store with same metadata path as FAISS
-        self.bm25 = BM25Store(settings.faiss_meta_path)
+        self.vs = FaissStore(settings, session_key="faiss_store")
+        # Initialize BM25 store - shares session state with FAISS
+        self.bm25 = BM25Store(session_key="faiss_store")
 
     def upload_to_cos(self, doc_id: str, filename: str, file_obj) -> str:
         key = f"docs/{doc_id}/{filename}"
@@ -172,9 +178,9 @@ class IngestionPipeline:
                 "text": text,
                 "source_uri": source_uri,
             })
-        # Upsert to FAISS
+        # Upsert to FAISS (stores in session state)
         upserted = self.vs.upsert_chunks(records)
-        # Also index in BM25
+        # Also index in BM25 (rebuilds from session state metadata)
         self.bm25.add_chunks(metadata_list)
         return upserted
 
@@ -192,8 +198,8 @@ class QueryPipeline:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.embed = EmbeddingClient(settings)
-        self.vs = FaissStore(settings)
-        self.bm25 = BM25Store(settings.faiss_meta_path)
+        self.vs = FaissStore(settings, session_key="faiss_store")
+        self.bm25 = BM25Store(session_key="faiss_store")
         self.reranker = Reranker(settings)
         self.gen = GeneratorClient(settings)
 
@@ -227,11 +233,12 @@ class QueryPipeline:
         fused_hits = [hit_map[hit_id] for hit_id in sorted_ids[:25]]
         return fused_hits
 
-    def answer(self, question: str) -> tuple[str, List[str]]:
+    def answer(self, question: str, allowed_doc_ids: Optional[List[str]] = None) -> tuple[str, List[str]]:
+        """Answer question with optional filtering by document IDs (session-based)."""
         # Step 1: Hybrid Search - Run both semantic (FAISS) and keyword (BM25) search
         q_emb = self.embed.embed_query(question)
-        semantic_hits = self.vs.search(q_emb, top_k=25)  # Get more for fusion
-        keyword_hits = self.bm25.search(question, top_k=25)
+        semantic_hits = self.vs.search(q_emb, top_k=25, allowed_doc_ids=allowed_doc_ids)
+        keyword_hits = self.bm25.search(question, top_k=25, allowed_doc_ids=allowed_doc_ids)
         
         # Step 2: Combine results using Reciprocal Rank Fusion (RRF)
         fused_hits = self._reciprocal_rank_fusion(semantic_hits, keyword_hits)

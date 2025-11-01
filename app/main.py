@@ -894,6 +894,9 @@ def chat_ui(query_pipeline: QueryPipeline):
         # Show placeholder chat interface even without documents
         return
     
+    # Get document IDs for current session to filter search results
+    session_doc_ids = [doc_id for doc_id, _, _, _ in st.session_state["ingested_docs"]]
+    
     # Display chat history
     for role, content in st.session_state["messages"]:
         with st.chat_message(role):
@@ -908,7 +911,8 @@ def chat_ui(query_pipeline: QueryPipeline):
 
         with st.chat_message("assistant"):
             with st.spinner("Searching documents and generating answer..."):
-                answer, sources = query_pipeline.answer(user_input)
+                # Filter search to only use documents from current session
+                answer, sources = query_pipeline.answer(user_input, allowed_doc_ids=session_doc_ids)
                 if sources:
                     citations = "\n\n**References:**\n" + "\n".join([f"- {s}" for s in sources])
                     full_response = answer + citations
