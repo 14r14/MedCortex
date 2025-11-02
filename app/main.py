@@ -398,6 +398,45 @@ def inject_custom_css():
             color: #ffffff !important;
         }
         
+        /* Verification badges - pill-shaped indicators */
+        .verification-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            margin-left: 6px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            vertical-align: middle;
+            line-height: 1.4;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        .verification-badge.verified {
+            background-color: #24a148;
+            color: white;
+        }
+        .verification-badge.unverified {
+            background-color: #ff832b;
+            color: white;
+        }
+        .verification-badge.refuted {
+            background-color: #da1e28;
+            color: white;
+        }
+        
+        /* Dark mode support for badges */
+        @media (prefers-color-scheme: dark) {
+            .verification-badge.verified {
+                background-color: #42be65;
+            }
+            .verification-badge.unverified {
+                background-color: #ff832b;
+            }
+            .verification-badge.refuted {
+                background-color: #fa4d56;
+            }
+        }
+        
         /* Links in citations */
         .stMarkdown a {
             color: var(--ibm-blue);
@@ -1017,6 +1056,110 @@ def sidebar_documents():
         st.sidebar.info("Upload documents to get started")
 
 
+def display_answer_with_verification(answer_text: str, verification_results: list[dict]) -> None:
+    """Display answer with verification status indicators."""
+    import re
+    
+    if not verification_results:
+        st.markdown(answer_text)
+        return
+    
+    # Create a mapping of claims to status
+    claim_to_status = {r.get("claim", ""): r.get("status", "Not Mentioned") for r in verification_results}
+    
+    # Clean answer text (remove citations section for processing)
+    answer_only = answer_text.split("**References:**")[0].strip() if "**References:**" in answer_text else answer_text
+    
+    # Split answer into sentences and add verification markers
+    sentences = re.split(r'([.;]\s+|\n+)', answer_only)
+    
+    displayed_text = ""
+    for sentence in sentences:
+        sentence_clean = sentence.strip()
+        if not sentence_clean or len(sentence_clean) < 10:
+            displayed_text += sentence
+            continue
+        
+        # Check if any claim matches this sentence (fuzzy match)
+        status = None
+        best_match = None
+        for claim, claim_status in claim_to_status.items():
+            if claim and len(claim) > 15:
+                # Check if claim text appears in sentence (first 50 chars for matching)
+                claim_preview = claim[:50].lower().strip()
+                sentence_preview = sentence_clean[:100].lower().strip()
+                # Check for substring match or word overlap
+                if claim_preview in sentence_preview:
+                    status = claim_status
+                    best_match = claim
+                    break
+                # Check word overlap for longer claims
+                claim_words = set(w for w in claim_preview.split() if len(w) > 3)
+                sentence_words = set(w for w in sentence_preview.split() if len(w) > 3)
+                if claim_words and len(claim_words & sentence_words) >= 2:
+                    status = claim_status
+                    best_match = claim
+                    break
+        
+        if status == "Supports":
+            # Add verified badge
+            displayed_text += f'{sentence}<span class="verification-badge verified">Verified</span>'
+        elif status == "Refutes":
+            # Add refuted badge
+            displayed_text += f'{sentence}<span class="verification-badge refuted">Refuted</span>'
+        elif status == "Not Mentioned":
+            # Add unverified badge
+            displayed_text += f'{sentence}<span class="verification-badge unverified">Not Found</span>'
+        else:
+            displayed_text += sentence
+    
+    st.markdown(displayed_text, unsafe_allow_html=True)
+    
+    # Show verification summary in expander
+    with st.expander("🔍 Verification Details", expanded=False):
+        supports = [r for r in verification_results if r.get("status") == "Supports"]
+        refutes = [r for r in verification_results if r.get("status") == "Refutes"]
+        not_mentioned = [r for r in verification_results if r.get("status") == "Not Mentioned"]
+        
+        # Create styled summary badges
+        summary_html = "<div style='display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;'>"
+        
+        if supports:
+            summary_html += f'<span class="verification-badge verified">{len(supports)} Verified</span>'
+        if refutes:
+            summary_html += f'<span class="verification-badge refuted">{len(refutes)} Refuted</span>'
+        if not_mentioned:
+            summary_html += f'<span class="verification-badge unverified">{len(not_mentioned)} Not Found</span>'
+        
+        summary_html += "</div>"
+        st.markdown(summary_html, unsafe_allow_html=True)
+        
+        if supports:
+            st.info(f"✓ **{len(supports)} claim(s) verified** against source documents")
+        if refutes:
+            st.error(f"⚠️ **{len(refutes)} claim(s) contradicted** by source documents")
+        if not_mentioned:
+            st.warning(f"⚠️ **{len(not_mentioned)} claim(s) not found** in source documents")
+        
+        # Show individual claim details
+        if verification_results:
+            st.divider()
+            st.caption("Individual Claims:")
+            for i, result in enumerate(verification_results, 1):
+                claim = result.get("claim", "")  # Show full claim, no truncation
+                status = result.get("status", "Not Mentioned")
+                
+                if status == "Supports":
+                    badge_html = '<span class="verification-badge verified">Verified</span>'
+                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+                elif status == "Refutes":
+                    badge_html = '<span class="verification-badge refuted">Refuted</span>'
+                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+                else:
+                    badge_html = '<span class="verification-badge unverified">Not Found</span>'
+                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+
+
 def chat_ui(query_pipeline: QueryPipeline):
     """Main chat interface."""
     st.header("Research Assistant", divider="blue")
@@ -1029,10 +1172,19 @@ def chat_ui(query_pipeline: QueryPipeline):
     # Get document IDs for current session to filter search results
     session_doc_ids = [doc_id for doc_id, _, _, _ in st.session_state["ingested_docs"]]
     
-    # Display chat history
-    for role, content in st.session_state["messages"]:
+    # Display chat history with verification status
+    for idx, (role, content) in enumerate(st.session_state["messages"]):
         with st.chat_message(role):
-            st.markdown(content)
+            # For assistant messages, check if verification results are available
+            if role == "assistant" and "verification_results" in st.session_state:
+                verification_data = st.session_state["verification_results"]
+                if idx < len(verification_data):
+                    verif = verification_data[idx]
+                    display_answer_with_verification(content, verif.get("verification", []))
+                else:
+                    st.markdown(content)
+            else:
+                st.markdown(content)
 
     # Chat input
     user_input = st.chat_input("Ask a research question about your documents…")
@@ -1045,12 +1197,24 @@ def chat_ui(query_pipeline: QueryPipeline):
             with st.spinner("Searching documents and generating answer..."):
                 # Filter search to only use documents from current session
                 answer, sources = query_pipeline.answer(user_input, allowed_doc_ids=session_doc_ids)
+                
+                # Get verification results if available
+                verification_results = []
+                if "verification_results" in st.session_state and st.session_state["verification_results"]:
+                    # Get the latest verification result
+                    latest_verif = st.session_state["verification_results"][-1]
+                    if latest_verif.get("answer") == answer:
+                        verification_results = latest_verif.get("verification", [])
+                
+                # Display answer with verification
+                display_answer_with_verification(answer, verification_results)
+                
                 if sources:
                     citations = "\n\n**References:**\n" + "\n".join([f"- {s}" for s in sources])
                     full_response = answer + citations
                 else:
                     full_response = answer
-                st.markdown(full_response)
+                
                 st.session_state["messages"].append(("assistant", full_response))
 
 

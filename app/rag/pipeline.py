@@ -14,8 +14,9 @@ from app.rag.faiss_store import FaissStore
 from app.rag.bm25_store import BM25Store
 from app.rag.reranker import Reranker
 from app.rag.generator import GeneratorClient
-from app.rag.table_extractor import extract_tables_from_pdf, store_tables_in_session
-from app.rag.iterative_agent import IterativeAgent
+from app.rag.table_extractor import extract_tables_camelot, store_tables_in_session
+from app.rag.orchestrator import Orchestrator
+from app.rag.verifier import AnswerVerifier
 
 try:
     import streamlit as st
@@ -146,11 +147,11 @@ class IngestionPipeline:
     def ingest_pdf(self, doc_id: str, filename: str, source_uri: str) -> int:
         file_stream = self._fetch_cos_stream(source_uri)
         
-        # Extract tables for TableRAG
-        tables = extract_tables_from_pdf(file_stream, doc_id)
-        if tables:
-            store_tables_in_session(tables)
-            logger.info(f"Extracted {len(tables)} tables from {filename}")
+        # Extract tables for TableRAG using camelot
+        dataframes = extract_tables_camelot(file_stream, doc_id)
+        if dataframes:
+            store_tables_in_session(dataframes, doc_id)
+            logger.info(f"Extracted {len(dataframes)} tables from {filename}")
         
         # Reset stream for text extraction
         file_stream.seek(0)
@@ -213,7 +214,9 @@ class QueryPipeline:
         self.bm25 = BM25Store(session_key="faiss_store")
         self.reranker = Reranker(settings)
         self.gen = GeneratorClient(settings)
-        self.iterative_agent = IterativeAgent(settings)
+        self.verifier = AnswerVerifier(settings)
+        # Orchestrator will be initialized lazily to avoid circular dependency
+        self._orchestrator = None
 
     def _reciprocal_rank_fusion(self, semantic_hits: List[dict], keyword_hits: List[dict], k: int = 60) -> List[dict]:
         """Combine semantic and keyword search results using Reciprocal Rank Fusion (RRF)."""
@@ -283,26 +286,37 @@ class QueryPipeline:
         
         return is_complex
     
-    def answer(self, question: str, allowed_doc_ids: Optional[List[str]] = None) -> tuple[str, List[str]]:
+    def answer(self, question: str, allowed_doc_ids: Optional[List[str]] = None, 
+               use_orchestrator: Optional[bool] = None) -> tuple[str, List[str]]:
         """
         Answer question with optional filtering by document IDs (session-based).
         
-        Uses iterative agent for complex queries, standard RAG for simple queries.
+        Uses orchestrator for complex queries, standard RAG for simple queries.
+        
+        Args:
+            question: User question
+            allowed_doc_ids: Optional list of allowed document IDs
+            use_orchestrator: Optional override flag. If None, auto-detect. If False, skip orchestrator.
         """
-        # Detect if query is complex
-        use_iterative = self._is_complex_query(question)
+        # Detect if query is complex (unless explicitly disabled)
+        if use_orchestrator is None:
+            use_iterative = self._is_complex_query(question)
+        else:
+            use_iterative = use_orchestrator
         
         if use_iterative:
-            logger.info("Using iterative agentic framework for complex query")
+            logger.info("Using orchestrator for complex query")
             try:
-                answer, sources = self.iterative_agent.answer_iteratively(
+                # Initialize orchestrator lazily
+                if self._orchestrator is None:
+                    self._orchestrator = Orchestrator(self.settings, self)
+                answer, sources = self._orchestrator.answer_iteratively(
                     question, 
-                    allowed_doc_ids=allowed_doc_ids,
-                    max_iterations=3
+                    allowed_doc_ids=allowed_doc_ids
                 )
                 return answer, list(dict.fromkeys(sources))
             except Exception as e:
-                logger.warning(f"Iterative agent failed: {e}, falling back to standard RAG")
+                logger.warning(f"Orchestrator failed: {e}, falling back to standard RAG")
                 # Fall through to standard RAG
         
         # Standard RAG pipeline for simple queries
@@ -330,19 +344,8 @@ class QueryPipeline:
         for h in reranked_hits:
             sources.append(h.get("source_uri", ""))
         
-        # Step 5: Check if query is about tables
-        from app.rag.table_extractor import get_tables_for_docs
-        from app.rag.table_reasoner import TableReasoner
-        table_reasoner = TableReasoner(self.settings)
-        tables = get_tables_for_docs(allowed_doc_ids or [])
-        
-        table_answer = None
-        if tables and table_reasoner.is_table_query(question, tables):
-            logger.info("Query appears to be about tabular data, performing table reasoning")
-            table_answer = table_reasoner.reason_over_tables(question, tables)
-            if table_answer:
-                # Combine table answer with text contexts
-                contexts.append(f"[Table Data] {table_answer}")
+        # Step 5: Table queries are now handled by orchestrator/router
+        # For simple queries, we just use text-based retrieval
         
         # Step 6: Two-step generation - compress then generate
         try:
@@ -352,6 +355,23 @@ class QueryPipeline:
             effective_contexts = contexts
         
         answer = self.gen.generate(question, effective_contexts, temperature=self.settings.temperature)
+        
+        # Step 7: Verify answer against source chunks
+        try:
+            verification_results = self.verifier.verify_answer(answer, contexts)
+            # Store verification results in session state for UI display
+            if st is not None:
+                if "verification_results" not in st.session_state:
+                    st.session_state["verification_results"] = []
+                st.session_state["verification_results"].append({
+                    "answer": answer,
+                    "verification": verification_results,
+                    "sources": list(dict.fromkeys(sources))
+                })
+        except Exception as e:
+            logger.warning(f"Answer verification failed: {e}")
+            # Continue without verification
+        
         return answer, list(dict.fromkeys(sources))
 
 

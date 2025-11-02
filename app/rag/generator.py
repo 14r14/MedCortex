@@ -9,10 +9,21 @@ from app.config import Settings
 
 
 SYSTEM_PROMPT = (
-    "You are a research assistant providing detailed, comprehensive answers to researchers. "
-    "Answer only using the provided context. If the answer is not in the context, say you don't know. "
-    "Provide thorough, detailed information including specific details, numbers, names, dates, methodologies, "
-    "and nuanced explanations. Do not oversimplify - researchers need complete and accurate information. "
+    "You are an expert medical research assistant providing highly detailed, comprehensive answers to medical and clinical researchers. "
+    "Your audience consists of medical professionals, researchers, and scientists who need precise, thorough information. "
+    "Answer only using the provided context. If the answer is not in the context, explicitly state that you don't know. "
+    
+    "For medical research queries, provide: "
+    "- Specific quantitative data: exact figures, percentages, p-values, confidence intervals, sample sizes, statistical significance levels "
+    "- Detailed methodologies: study designs, protocols, inclusion/exclusion criteria, data collection methods "
+    "- Clinical findings: patient outcomes, efficacy rates, side effects, safety profiles, dosing information "
+    "- Comparative analyses: treatment comparisons, protocol differences, efficacy across populations "
+    "- Contextual nuances: limitations, confounding factors, study constraints, generalizability concerns "
+    "- Technical terminology: Use precise medical and scientific terminology appropriate for researchers "
+    "- Comprehensive scope: Address all aspects of the question, including related considerations, implications, and applications "
+    
+    "Do not oversimplify or summarize. Medical researchers need complete, accurate, and detailed information with all relevant specifics. "
+    "Be thorough and precise. Include all relevant details, figures, methodologies, findings, and nuances from the source material. "
     "Do NOT include placeholder citations like [Source 1], [Source 2], [Table Data], etc. in your answer. "
     "Sources will be listed separately - just provide the answer text itself."
 )
@@ -36,23 +47,31 @@ class GeneratorClient:
         joined = "\n\n".join(contexts)
         return (
             f"{SYSTEM_PROMPT}\n\nQuestion: {question}\n\nContext:\n{joined}\n\n"
-            "Provide a comprehensive, detailed answer suitable for researchers. Include specific details, "
-            "exact figures, methodologies, findings, limitations, and relevant nuances from the context. "
-            "Do not oversimplify - aim for thoroughness and precision. "
+            "Provide a comprehensive, highly detailed answer tailored for medical researchers. "
+            "Include ALL relevant specifics: exact quantitative data (percentages, p-values, confidence intervals, sample sizes), "
+            "detailed methodologies (study designs, protocols, procedures), clinical findings (outcomes, efficacy, safety profiles), "
+            "comparative analyses, limitations, contextual nuances, and technical medical terminology. "
+            "Do not oversimplify or summarize - medical researchers need complete information with all details and subtleties. "
+            "Be thorough, precise, and comprehensive. Address all aspects of the question and related considerations. "
+            "Use precise medical and scientific terminology appropriate for the research community. "
             "Provide only your answer directly without repeating the question, context, or any labels like 'Answer:' or 'Source:'. "
             "Do NOT include placeholder citations like [Source 1], [Source 2], [Table Data], (Source 1, Source 2), etc. "
-            "Just provide the answer text itself - sources will be listed separately."
+            "Just provide the detailed answer text itself - sources will be listed separately."
         )
 
     def build_compression_prompt(self, question: str, contexts: List[str]) -> str:
         joined = "\n\n".join(contexts)
         return (
-            "Compress the following context into a comprehensive summary relevant to the question. "
-            "Retain all important details: names, figures, dates, methodologies, findings, statistics, "
-            "limitations, and nuanced claims. Preserve specificity - do not oversimplify. "
+            "Compress the following context into a comprehensive summary relevant to this medical research question. "
+            "Retain ALL critical details essential for medical researchers: "
+            "exact quantitative data (percentages, p-values, confidence intervals, sample sizes, statistical significance), "
+            "detailed methodologies (study designs, protocols, procedures, inclusion/exclusion criteria), "
+            "clinical findings (patient outcomes, efficacy rates, side effects, safety profiles, dosing), "
+            "comparative analyses, limitations, contextual nuances, and technical medical terminology. "
+            "Preserve all specificity - do not oversimplify or summarize. Medical researchers need complete information. "
             "Do not speculate.\n\n"
             f"Question: {question}\n\nContext:\n{joined}\n\n"
-            "Return only the compressed summary with all relevant details preserved."
+            "Return only the compressed summary with all relevant details preserved for medical research analysis."
         )
 
     def clean_output(self, text: str) -> str:
@@ -63,6 +82,15 @@ class GeneratorClient:
         cleaned = re.sub(r'\[Source\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\[Table\s+Data\]', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\(Source\s+\d+(?:,\s*Source\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
+        
+        # Remove evidence citations like (Evidence 1), (Evidence 2), etc.
+        cleaned = re.sub(r'\(Evidence\s+\d+(?:,\s*Evidence\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\[Evidence\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\bEvidence\s+\d+\b', '', cleaned, flags=re.IGNORECASE)
+        
+        # Remove part references like (Part 1), (Part 2), etc.
+        cleaned = re.sub(r'\(Part\s+\d+(?:,\s*Part\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\[Part\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
         
         # Split by common prompt patterns to extract just the actual answers
         # Pattern: "Answer: ..." followed by other prompt elements
@@ -79,6 +107,25 @@ class GeneratorClient:
         
         # Remove "Sources:" section at the end if present
         cleaned = re.sub(r"\n\s*Sources?\s*:.*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
+        
+        # Remove meta-commentary paragraphs that describe what the answer includes
+        meta_patterns = [
+            r"This\s+(?:synthesized\s+)?answer\s+(?:integrates|includes|provides|addresses).*?(?:\n\n|\Z)",
+            r"This\s+(?:response|answer)\s+(?:integrates|includes|provides|addresses).*?(?:\n\n|\Z)",
+            r"The\s+(?:above\s+)?answer\s+(?:integrates|includes|provides|addresses).*?(?:\n\n|\Z)",
+            r"Note:\s*This\s+answer.*?(?:\n\n|\Z)",
+            r"In\s+summary,\s*this\s+answer.*?(?:\n\n|\Z)",
+        ]
+        for pattern in meta_patterns:
+            cleaned = re.sub(pattern, "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove paragraphs that start with meta-descriptions
+        cleaned = re.sub(
+            r"\n\n(?:This|The|Note:|In summary,).*?(?:integrates|includes|provides|addresses|combines|synthesizes).*?(?:information|evidence|sources|data|findings).*?(?:all aspects|comprehensive|detailed|thorough|complete).*?\n\n",
+            "\n\n",
+            cleaned,
+            flags=re.DOTALL | re.IGNORECASE
+        )
         
         # Remove "Question:" sections and everything after them
         cleaned = re.sub(r"Question:\s*.*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)

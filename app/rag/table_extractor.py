@@ -1,16 +1,15 @@
-"""Table extraction from PDFs for TableRAG."""
+"""Table extraction from PDFs for TableRAG using camelot-py."""
 import io
-import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 try:
-    import pdfplumber
+    import camelot
     import pandas as pd
-    PDFPLUMBER_AVAILABLE = True
+    CAMELOT_AVAILABLE = True
 except ImportError:
-    PDFPLUMBER_AVAILABLE = False
-    pdfplumber = None
+    CAMELOT_AVAILABLE = False
+    camelot = None
     pd = None
 
 try:
@@ -21,103 +20,109 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def extract_tables_from_pdf(file_stream: io.BytesIO, doc_id: str) -> List[Dict[str, Any]]:
+def extract_tables_camelot(file_stream: io.BytesIO, doc_id: str) -> List[pd.DataFrame]:
     """
-    Extract tables from PDF using pdfplumber.
+    Extract tables from PDF using camelot-py.
+    
+    Returns a list of pandas DataFrames.
     
     Args:
         file_stream: PDF file stream (BytesIO)
         doc_id: Document ID for tracking
         
     Returns:
-        List of table dictionaries with structured data
+        List of pandas DataFrames (one per table)
     """
-    if not PDFPLUMBER_AVAILABLE:
-        logger.warning("pdfplumber not available, skipping table extraction")
+    if not CAMELOT_AVAILABLE:
+        logger.warning("camelot-py not available, skipping table extraction")
         return []
     
-    tables = []
+    dataframes = []
     
     try:
-        with pdfplumber.open(file_stream) as pdf:
-            for page_num, page in enumerate(pdf.pages, start=1):
-                # Extract tables from current page
-                page_tables = page.extract_tables()
-                
-                for table_idx, table in enumerate(page_tables):
-                    if not table or len(table) == 0:
-                        continue
+        # Save BytesIO to temporary file path for camelot
+        # camelot requires a file path, not a stream
+        import tempfile
+        import os
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            file_stream.seek(0)
+            tmp_file.write(file_stream.read())
+            tmp_path = tmp_file.name
+        
+        try:
+            # Extract tables using camelot
+            tables = camelot.read_pdf(tmp_path, pages='all', flavor='lattice')
+            
+            for table_idx, table in enumerate(tables):
+                if table.df is not None and len(table.df) > 0:
+                    # Clean DataFrame (remove empty rows/cols)
+                    df = table.df.copy()
+                    df = df.dropna(how='all').dropna(axis=1, how='all')
                     
-                    # Convert table to DataFrame for structured access
-                    try:
-                        # Use first row as header if it looks like headers
-                        df = pd.DataFrame(table[1:], columns=table[0] if table else None)
-                        
-                        # Clean DataFrame (remove empty rows/cols)
-                        df = df.dropna(how='all').dropna(axis=1, how='all')
-                        
-                        # Convert to dict for JSON serialization
-                        table_dict = {
-                            "doc_id": doc_id,
-                            "page_num": page_num,
-                            "table_index": table_idx,
-                            "table_id": f"{doc_id}_page{page_num}_table{table_idx}",
-                            "data": df.to_dict(orient='records'),  # List of dicts (rows)
-                            "columns": list(df.columns) if len(df.columns) > 0 else [f"Col{i+1}" for i in range(len(table[0]) if table else 0)],
-                            "row_count": len(df),
-                            "col_count": len(df.columns) if len(df.columns) > 0 else 0,
-                            "text_repr": df.to_string(),  # String representation for search
-                        }
-                        
-                        tables.append(table_dict)
-                        
-                    except Exception as e:
-                        logger.warning(f"Error processing table on page {page_num}, table {table_idx}: {e}")
-                        continue
-                        
+                    # Reset index
+                    df = df.reset_index(drop=True)
+                    
+                    if len(df) > 0:
+                        dataframes.append(df)
+                        logger.info(f"Extracted table {table_idx + 1} with shape {df.shape} from doc {doc_id}")
+        
+        finally:
+            # Clean up temporary file
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+                
     except Exception as e:
-        logger.error(f"Error extracting tables from PDF: {e}")
+        logger.error(f"Error extracting tables from PDF using camelot: {e}")
         return []
     
-    logger.info(f"Extracted {len(tables)} tables from document {doc_id}")
-    return tables
+    logger.info(f"Extracted {len(dataframes)} tables from document {doc_id}")
+    return dataframes
 
 
-def store_tables_in_session(tables: List[Dict[str, Any]], session_key: str = "tables") -> None:
-    """Store extracted tables in Streamlit session state."""
+def store_tables_in_session(dataframes: List[pd.DataFrame], doc_id: str, session_key: str = "table_store") -> None:
+    """
+    Store extracted DataFrames in Streamlit session state.
+    
+    Args:
+        dataframes: List of pandas DataFrames
+        doc_id: Document ID
+        session_key: Session state key (default: "table_store")
+    """
     if st is None:
         return
     
-    if session_key not in st.session_state:
-        st.session_state[session_key] = []
+    if not CAMELOT_AVAILABLE:
+        return
     
-    st.session_state[session_key].extend(tables)
+    if session_key not in st.session_state:
+        st.session_state[session_key] = {}
+    
+    # Store DataFrames mapped by doc_id
+    st.session_state[session_key][doc_id] = dataframes
+    logger.info(f"Stored {len(dataframes)} tables in session for doc {doc_id}")
 
 
-def get_tables_for_docs(doc_ids: List[str], session_key: str = "tables") -> List[Dict[str, Any]]:
-    """Get all tables for given document IDs."""
-    if st is None:
+def get_tables_for_docs(doc_ids: List[str], session_key: str = "table_store") -> List[dict]:
+    """Get all tables (as DataFrames) for given document IDs."""
+    if st is None or not CAMELOT_AVAILABLE:
         return []
     
     if session_key not in st.session_state:
         return []
     
-    all_tables = st.session_state[session_key]
-    return [t for t in all_tables if t.get("doc_id") in doc_ids]
-
-
-def get_table_by_id(table_id: str, session_key: str = "tables") -> Optional[Dict[str, Any]]:
-    """Get a specific table by its ID."""
-    if st is None:
-        return None
+    table_store = st.session_state[session_key]
+    tables = []
     
-    if session_key not in st.session_state:
-        return None
+    for doc_id in doc_ids:
+        if doc_id in table_store:
+            dataframes = table_store[doc_id]
+            for idx, df in enumerate(dataframes):
+                tables.append({
+                    "doc_id": doc_id,
+                    "table_index": idx,
+                    "dataframe": df
+                })
     
-    all_tables = st.session_state[session_key]
-    for table in all_tables:
-        if table.get("table_id") == table_id:
-            return table
-    
-    return None
+    return tables
 
