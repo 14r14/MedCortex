@@ -67,8 +67,8 @@ class AnswerVerifier:
             if has_quantitative or has_finding or len(sentence) > 50:
                 claims.append(sentence)
         
-        # Limit to top 10 claims to avoid too many verification calls
-        return claims[:10]
+        # Return all claims for verification (no limit)
+        return claims
     
     def verify_claim(self, claim: str, source_chunks: List[str]) -> Dict[str, str]:
         """

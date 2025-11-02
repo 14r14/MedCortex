@@ -310,10 +310,26 @@ class QueryPipeline:
                 # Initialize orchestrator lazily
                 if self._orchestrator is None:
                     self._orchestrator = Orchestrator(self.settings, self)
-                answer, sources = self._orchestrator.answer_iteratively(
+                # Check if Streamlit is available for trajectory visualization
+                show_trajectory = st is not None
+                # Get status callback from session state if available
+                status_callback = st.session_state.get("_status_callback") if st is not None else None
+                result = self._orchestrator.answer_iteratively(
                     question, 
-                    allowed_doc_ids=allowed_doc_ids
+                    allowed_doc_ids=allowed_doc_ids,
+                    show_trajectory=show_trajectory,
+                    status_callback=status_callback
                 )
+                answer, sources, trajectory = result if len(result) == 3 else (result[0], result[1], None)
+                # Store trajectory in session state for UI display
+                if show_trajectory and trajectory:
+                    if "agent_trajectory" not in st.session_state:
+                        st.session_state["agent_trajectory"] = []
+                    st.session_state["agent_trajectory"].append({
+                        "query": question,
+                        "trajectory": trajectory,
+                        "answer": answer
+                    })
                 return answer, list(dict.fromkeys(sources))
             except Exception as e:
                 logger.warning(f"Orchestrator failed: {e}, falling back to standard RAG")
@@ -356,7 +372,8 @@ class QueryPipeline:
         
         answer = self.gen.generate(question, effective_contexts, temperature=self.settings.temperature)
         
-        # Step 7: Verify answer against source chunks
+        # Step 7: Verify answer against source chunks (for simple queries)
+        # Note: Complex queries handled by orchestrator with trajectory
         try:
             verification_results = self.verifier.verify_answer(answer, contexts)
             # Store verification results in session state for UI display

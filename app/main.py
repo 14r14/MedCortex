@@ -73,7 +73,7 @@ def inject_custom_css():
         
         /* Sidebar title - VeriCite */
         [data-testid="stSidebar"] h1 {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             font-weight: 700;
             font-size: 1.75rem;
             letter-spacing: -0.01em;
@@ -82,12 +82,12 @@ def inject_custom_css():
         
         [data-testid="stSidebar"] .stMarkdown h2,
         [data-testid="stSidebar"] .stMarkdown h3 {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
         }
         
         [data-testid="stSidebar"] .stMarkdown,
         [data-testid="stSidebar"] p {
-            color: #e5e5e5 !important;
+            color: #e0e0e0 !important;
         }
         
         /* Sidebar dividers */
@@ -98,12 +98,12 @@ def inject_custom_css():
         
         /* Sidebar document items */
         [data-testid="stSidebar"] .stMarkdown strong {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             font-weight: 600;
         }
         
         [data-testid="stSidebar"] .stMarkdown .stCaption {
-            color: rgba(255, 255, 255, 0.7) !important;
+            color: rgba(240, 240, 240, 0.8) !important;
             font-size: 0.875rem;
         }
         
@@ -128,12 +128,12 @@ def inject_custom_css():
         /* Assistant chat message - Dark Slate */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] {
             background-color: var(--dark-slate);
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             border-radius: 12px 12px 12px 0;
             padding: 12px 16px;
         }
         
-        /* Ensure all text in assistant messages is white */
+        /* Ensure all text in assistant messages is soft white */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] p,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] div,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] span,
@@ -146,23 +146,23 @@ def inject_custom_css():
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h4,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h5,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h6 {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
         }
         
         /* Bold/strong text in assistant messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] strong,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] b {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
         }
         
-        /* Links in assistant messages - white for maximum contrast */
+        /* Links in assistant messages - soft white */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] a {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             text-decoration: underline !important;
         }
         
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] a:hover {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             opacity: 0.9 !important;
         }
         
@@ -213,6 +213,129 @@ def inject_custom_css():
             border-radius: 6px !important;
         }
         
+        /* Status update text with pulsing animation */
+        .status-update-text {
+            color: var(--dark-gray) !important;
+            font-size: 0.95rem !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            animation: pulse 2s ease-in-out infinite;
+            line-height: 1.5 !important;
+        }
+        
+        /* Remove paragraph default margins for status text */
+        [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] p.status-update-text {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Align status container with chat message avatar - assistant messages soft white */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] .status-update-text {
+            color: #f0f0f0 !important;
+            display: block !important;
+            line-height: 1.5 !important;
+        }
+        
+        /* Ensure status container has no extra padding */
+        [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] [data-testid="stVerticalBlock"]:has(.status-update-text),
+        [data-testid="stChatMessage"] [data-testid="stChatMessageContent"] div:has(.status-update-text) {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        
+        /* Minimalistic expander styling - match status text style */
+        [data-testid="stExpander"] {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            margin: 0.5rem 0 !important;
+            outline: none !important;
+        }
+        
+        [data-testid="stExpander"] > div {
+            border: none !important;
+            background: transparent !important;
+            outline: none !important;
+        }
+        
+        /* Expander header (button) - minimalistic, match status text */
+        [data-testid="stExpander"] summary {
+            border: none !important;
+            outline: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            font-weight: 400 !important;
+            font-size: 0.95rem !important;
+            color: var(--dark-gray) !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            list-style: none !important;
+        }
+        
+        /* Expander in assistant chat messages - soft white text */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary {
+            color: #f0f0f0 !important;
+        }
+        
+        /* Curved hover effect - subtle background with rounded corners */
+        [data-testid="stExpander"] summary:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-radius: 8px !important;
+        }
+        
+        /* Expander hover in assistant messages */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary:hover {
+            background: rgba(240, 240, 240, 0.1) !important;
+        }
+        
+        /* Expander content area - distinguished with subtle background and indentation */
+        [data-testid="stExpander"] [data-testid="stExpanderContent"] {
+            border: none !important;
+            outline: none !important;
+            background: rgba(0, 0, 0, 0.02) !important;
+            padding: 0.75rem 1rem !important;
+            margin-top: 0.25rem !important;
+            margin-left: 0.5rem !important;
+            border-radius: 8px !important;
+            border-left: 2px solid rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        /* For assistant chat messages, use lighter background and soft white border */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] [data-testid="stExpanderContent"] {
+            background: rgba(240, 240, 240, 0.05) !important;
+            border-left: 2px solid rgba(240, 240, 240, 0.2) !important;
+        }
+        
+        [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
+            background: rgba(0, 0, 0, 0.03) !important;
+            border-left: 2px solid rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
+            background: rgba(240, 240, 240, 0.08) !important;
+            border-left: 2px solid rgba(240, 240, 240, 0.3) !important;
+        }
+        
+        /* Ensure no borders on expander container */
+        [data-testid="stExpander"] details {
+            border: none !important;
+            outline: none !important;
+            background: transparent !important;
+        }
+        
         /* File uploader - Compact styling */
         [data-testid="stFileUploader"] {
             border: 2px dashed var(--ibm-blue) !important;
@@ -221,60 +344,13 @@ def inject_custom_css():
             padding: 1rem !important;
             transition: all 0.2s ease !important;
             min-height: 60px !important;
+            width: 100% !important;
         }
         
         [data-testid="stFileUploader"]:hover {
             border-color: var(--ibm-blue) !important;
             background: rgba(15, 98, 254, 0.05) !important;
             box-shadow: 0 2px 8px rgba(15, 98, 254, 0.1) !important;
-        }
-        
-        /* Drag and drop overlay */
-        .drag-drop-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 98, 254, 0.1);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            border: 4px dashed var(--ibm-blue);
-            pointer-events: none;
-        }
-        
-        .drag-drop-overlay.active {
-            display: flex;
-        }
-        
-        .drag-drop-overlay-content {
-            background: #ffffff;
-            padding: 3rem 4rem;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            border: 2px solid var(--ibm-blue);
-        }
-        
-        .drag-drop-overlay-content h2 {
-            color: var(--ibm-blue);
-            font-size: 2rem;
-            margin: 0 0 1rem 0;
-            font-weight: 700;
-        }
-        
-        .drag-drop-overlay-content p {
-            color: var(--medium-gray);
-            font-size: 1.1rem;
-            margin: 0;
-        }
-        
-        .drag-drop-overlay-content .icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
         }
         
         /* Selected files preview */
@@ -346,23 +422,21 @@ def inject_custom_css():
             flex-shrink: 0 !important;
         }
         
-        /* Remove button - simple styling */
+        /* File uploader browse button - IBM blue instead of red */
         [data-testid="stFileUploader"] button {
             background-color: transparent !important;
             border: none !important;
-            color: var(--medium-gray) !important;
+            color: var(--ibm-blue) !important;
             font-size: 1rem !important;
             padding: 0.25rem 0.5rem !important;
             cursor: pointer !important;
             transition: all 0.15s ease !important;
             border-radius: 4px !important;
-            opacity: 0.7 !important;
         }
         
         [data-testid="stFileUploader"] button:hover {
-            background-color: rgba(218, 30, 40, 0.08) !important;
-            color: #da1e28 !important;
-            opacity: 1 !important;
+            background-color: rgba(15, 98, 254, 0.1) !important;
+            color: var(--ibm-blue) !important;
         }
         
         /* Success messages */
@@ -392,10 +466,10 @@ def inject_custom_css():
             color: var(--dark-gray);
         }
         
-        /* References heading in assistant messages - keep white, not green */
+        /* References heading in assistant messages - keep soft white, not green */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) 
         [data-testid="stChatMessageContent"] strong {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
         }
         
         /* Verification badges - pill-shaped indicators */
@@ -403,6 +477,7 @@ def inject_custom_css():
             display: inline-block;
             padding: 3px 10px;
             margin-left: 6px;
+            margin-right: 8px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
@@ -410,6 +485,9 @@ def inject_custom_css():
             line-height: 1.4;
             letter-spacing: 0.02em;
             text-transform: uppercase;
+            min-width: 90px;
+            text-align: center;
+            box-sizing: border-box;
         }
         .verification-badge.verified {
             background-color: #24a148;
@@ -418,10 +496,54 @@ def inject_custom_css():
         .verification-badge.unverified {
             background-color: #ff832b;
             color: white;
+            position: relative;
+            cursor: help;
         }
         .verification-badge.refuted {
             background-color: #da1e28;
             color: white;
+        }
+        
+        /* Tooltip for unverified/extrapolated badges */
+        .verification-badge.unverified:hover::after {
+            content: "This statement is part of the synthesized summary but could not be directly verified from the cited text. Please review the source for full context.";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            padding: 0.75rem 1rem;
+            background-color: var(--dark-gray);
+            color: #ffffff;
+            font-size: 0.875rem;
+            font-weight: 400;
+            white-space: normal;
+            width: 280px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            pointer-events: none;
+            text-transform: none;
+            line-height: 1.5;
+            text-align: left;
+        }
+        
+        /* Tooltip arrow */
+        .verification-badge.unverified:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 92%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--dark-gray);
+            z-index: 1001;
+            pointer-events: none;
+        }
+        
+        /* Badge in claim list - no left margin */
+        .claim-item-badge {
+            margin-left: 0 !important;
         }
         
         /* Dark mode support for badges */
@@ -434,6 +556,16 @@ def inject_custom_css():
             }
             .verification-badge.refuted {
                 background-color: #fa4d56;
+            }
+            
+            /* Dark mode tooltip - use light background */
+            .verification-badge.unverified:hover::after {
+                background-color: #2a2a2a;
+                color: #f0f0f0;
+            }
+            
+            .verification-badge.unverified:hover::before {
+                border-top-color: #2a2a2a;
             }
         }
         
@@ -460,7 +592,7 @@ def inject_custom_css():
         
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) 
         [data-testid="stChatMessageContent"] li {
-            color: #ffffff !important;
+            color: #f0f0f0 !important;
             margin-bottom: 0.25rem;
         }
         
@@ -523,6 +655,49 @@ def inject_custom_css():
                 color: var(--medium-gray);
             }
             
+            /* Status text - dark mode */
+            .status-update-text {
+                color: var(--dark-gray) !important;
+            }
+            
+            /* Expander - dark mode */
+            [data-testid="stExpander"] summary {
+                color: var(--dark-gray) !important;
+            }
+            
+            [data-testid="stExpander"] summary:hover {
+                background: rgba(255, 255, 255, 0.05) !important;
+            }
+            
+            [data-testid="stExpander"] [data-testid="stExpanderContent"] {
+                background: rgba(255, 255, 255, 0.03) !important;
+                border-left: 2px solid rgba(255, 255, 255, 0.15) !important;
+            }
+            
+            [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border-left: 2px solid rgba(255, 255, 255, 0.2) !important;
+            }
+            
+            /* Expander in assistant messages still uses soft white text in dark mode */
+            [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary {
+                color: #f0f0f0 !important;
+            }
+            
+            [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary:hover {
+                background: rgba(240, 240, 240, 0.1) !important;
+            }
+            
+            [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] [data-testid="stExpanderContent"] {
+                background: rgba(240, 240, 240, 0.05) !important;
+                border-left: 2px solid rgba(240, 240, 240, 0.2) !important;
+            }
+            
+            [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
+                background: rgba(240, 240, 240, 0.08) !important;
+                border-left: 2px solid rgba(240, 240, 240, 0.3) !important;
+            }
+            
             [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] {
                 background-color: #1a1a1a !important;
                 border-color: var(--ibm-blue) !important;
@@ -556,7 +731,7 @@ def inject_custom_css():
         /* Hide the Streamlit header and footer */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-        header {background-color: transparent !important;}
+        header {visibility: hidden;}
         
         /* Ensure sidebar toggle button remains visible and functional */
         [data-testid="stSidebarCollapseButton"],
@@ -564,15 +739,8 @@ def inject_custom_css():
         [aria-label*="sidebar"][aria-label*="toggle"],
         button[aria-label*="Open sidebar"],
         button[aria-label*="Close sidebar"] {
-            visibility: visible !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 999 !important;
-            width: auto !important;
-            height: auto !important;
-            padding: 0.5rem !important;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            visibility: hidden !important;
+            display: none !important;
         }
         
         /* Ensure sidebar toggle button icon is visible */
@@ -609,360 +777,6 @@ def inject_custom_css():
         }
         
         </style>
-        
-        <!-- Drag and Drop Overlay -->
-        <div class="drag-drop-overlay" id="dragDropOverlay">
-            <div class="drag-drop-overlay-content">
-                <div class="icon">📄</div>
-                <h2>Drop files to upload</h2>
-                <p>Release to add files to VeriCite</p>
-            </div>
-        </div>
-        
-        <script>
-        (function() {
-            // Wait for Streamlit to be ready
-            function waitForStreamlit(callback) {
-                if (window.parent.streamlitLoaded) {
-                    callback();
-                } else {
-                    window.addEventListener('streamlit:loaded', callback);
-                }
-            }
-            
-            // Find the file uploader input element with retry
-            function findFileUploader() {
-                // Try multiple selectors for Streamlit's file uploader
-                const selectors = [
-                    '[data-testid="stFileUploader"] input[type="file"]',
-                    '.stFileUploader input[type="file"]',
-                    'input[type="file"][accept*="pdf"]',
-                    'input[type="file"]'
-                ];
-                
-                for (const selector of selectors) {
-                    const uploader = document.querySelector(selector);
-                    if (uploader) {
-                        return uploader;
-                    }
-                }
-                return null;
-            }
-            
-            const overlay = document.getElementById('dragDropOverlay');
-            let dragCounter = 0;
-            let isDragging = false;
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            // Handle drag enter
-            function handleDragEnter(e) {
-                // Only handle file drags
-                if (e.dataTransfer.items) {
-                    for (let i = 0; i < e.dataTransfer.items.length; i++) {
-                        if (e.dataTransfer.items[i].kind === 'file') {
-                            isDragging = true;
-                            dragCounter++;
-                            overlay.classList.add('active');
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Handle drag over - critical for drop to work
-            function handleDragOver(e) {
-                if (isDragging) {
-                    preventDefaults(e);
-                    e.dataTransfer.dropEffect = 'copy';
-                }
-            }
-            
-            // Handle drag leave
-            function handleDragLeave(e) {
-                // Only decrease counter if leaving the window
-                if (!e.relatedTarget || !document.contains(e.relatedTarget)) {
-                    dragCounter--;
-                    if (dragCounter <= 0) {
-                        dragCounter = 0;
-                        isDragging = false;
-                        overlay.classList.remove('active');
-                    }
-                }
-            }
-            
-            // Handle drop
-            function handleDrop(e) {
-                preventDefaults(e);
-                dragCounter = 0;
-                isDragging = false;
-                overlay.classList.remove('active');
-                
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
-                if (files && files.length > 0) {
-                    // Find uploader with retry mechanism
-                    let uploader = findFileUploader();
-                    
-                    // If not found, wait a bit and retry (Streamlit might be re-rendering)
-                    if (!uploader) {
-                        setTimeout(() => {
-                            uploader = findFileUploader();
-                            if (uploader) {
-                                setFiles(uploader, files);
-                            }
-                        }, 100);
-                    } else {
-                        setFiles(uploader, files);
-                    }
-                }
-            }
-            
-            function setFiles(uploader, files) {
-                try {
-                    // Create a new FileList-like object using DataTransfer API
-                    const dataTransfer = new DataTransfer();
-                    
-                    // Add existing files first (if any)
-                    if (uploader.files) {
-                        for (let i = 0; i < uploader.files.length; i++) {
-                            dataTransfer.items.add(uploader.files[i]);
-                        }
-                    }
-                    
-                    // Add new files
-                    for (let i = 0; i < files.length; i++) {
-                        // Only add PDF files
-                        if (files[i].type === 'application/pdf' || files[i].name.toLowerCase().endsWith('.pdf')) {
-                            dataTransfer.items.add(files[i]);
-                        }
-                    }
-                    
-                    uploader.files = dataTransfer.files;
-                    
-                    // Trigger multiple events to ensure Streamlit picks it up
-                    ['change', 'input'].forEach(eventType => {
-                        const event = new Event(eventType, { bubbles: true, cancelable: true });
-                        uploader.dispatchEvent(event);
-                    });
-                    
-                    // Also try native input event
-                    const inputEvent = new InputEvent('input', { bubbles: true });
-                    uploader.dispatchEvent(inputEvent);
-                    
-                    // Visual feedback - success flash
-                    overlay.style.display = 'flex';
-                    overlay.style.background = 'rgba(36, 161, 72, 0.25)';
-                    overlay.querySelector('h2').textContent = '✓ Files added!';
-                    overlay.querySelector('p').textContent = 'Check the upload area in the sidebar';
-                    setTimeout(() => {
-                        overlay.classList.remove('active');
-                        overlay.style.background = '';
-                        overlay.querySelector('h2').textContent = 'Drop files to upload';
-                        overlay.querySelector('p').textContent = 'Release to add files to VeriCite';
-                    }, 2000);
-                } catch (error) {
-                    console.error('Error setting files:', error);
-                    // Fallback: show error feedback
-                    overlay.style.display = 'flex';
-                    overlay.style.background = 'rgba(218, 30, 40, 0.2)';
-                    overlay.querySelector('h2').textContent = 'Upload failed';
-                    overlay.querySelector('p').textContent = 'Please use the file uploader in the sidebar';
-                    setTimeout(() => {
-                        overlay.classList.remove('active');
-                        overlay.style.background = '';
-                        overlay.querySelector('h2').textContent = 'Drop files to upload';
-                        overlay.querySelector('p').textContent = 'Release to add files to VeriCite';
-                    }, 2000);
-                }
-            }
-            
-            // Initialize when DOM is ready
-            function initDragDrop() {
-                // Prevent default drag behaviors on document
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    document.addEventListener(eventName, preventDefaults, false);
-                    document.body.addEventListener(eventName, preventDefaults, false);
-                });
-                
-                // Add specific handlers
-                document.addEventListener('dragenter', handleDragEnter);
-                document.addEventListener('dragover', handleDragOver);
-                document.addEventListener('dragleave', handleDragLeave);
-                document.addEventListener('drop', handleDrop);
-                
-                // Also on window level for when dragging from outside
-                window.addEventListener('dragenter', handleDragEnter);
-                window.addEventListener('dragover', handleDragOver);
-                window.addEventListener('dragleave', handleDragLeave);
-                window.addEventListener('drop', handleDrop);
-            }
-            
-            // Wait for Streamlit to be ready, then initialize
-            waitForStreamlit(initDragDrop);
-            
-            // Also try initializing immediately (in case Streamlit is already loaded)
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initDragDrop);
-            } else {
-                initDragDrop();
-            }
-        })();
-        
-        // Fix file size alignment - move to right side
-        function fixFileSizeAlignment() {
-            const fileUploaders = document.querySelectorAll('[data-testid="stFileUploader"]');
-            fileUploaders.forEach(uploader => {
-                const fileNames = uploader.querySelectorAll('[data-testid="stFileUploaderFileName"]');
-                fileNames.forEach(fileName => {
-                    // Ensure flexbox layout - simple
-                    if (fileName.style.display !== 'flex') {
-                        fileName.style.display = 'flex';
-                        fileName.style.alignItems = 'center';
-                        fileName.style.justifyContent = 'space-between';
-                        fileName.style.gap = '0.5rem';
-                    }
-                    
-                    // Find file size element - could be sibling or child
-                    let fileSize = fileName.querySelector('[data-testid="stFileUploaderFileSize"]');
-                    if (!fileSize) {
-                        fileSize = fileName.nextElementSibling?.querySelector('[data-testid="stFileUploaderFileSize"]');
-                    }
-                    if (!fileSize) {
-                        // Try to find by text content (MB, KB, etc.)
-                        const allElements = Array.from(fileName.parentElement.querySelectorAll('*'));
-                        const sizePattern = /\d+\.?\d*\s*(MB|KB|GB|bytes?)/i;
-                        fileSize = allElements.find(el => 
-                            el.textContent && 
-                            (el.textContent.match(sizePattern) || 
-                             (el.classList.contains('fileSize') || el.textContent.includes('MB')))
-                        );
-                    }
-                    
-                    // If file size is found as a child, move it or style it
-                    if (fileSize && fileSize.parentElement === fileName) {
-                        fileSize.style.marginLeft = 'auto';
-                        fileSize.style.marginRight = '0.5rem';
-                        fileSize.style.flexShrink = '0';
-                        fileSize.style.whiteSpace = 'nowrap';
-                    }
-                    
-                    // Make filename take available space
-                    const filenameText = fileName.firstElementChild || fileName.childNodes[0];
-                    if (filenameText && filenameText !== fileSize) {
-                        if (filenameText.nodeType === 1) { // Element node
-                            filenameText.style.flex = '1';
-                            filenameText.style.minWidth = '0';
-                            filenameText.style.overflow = 'hidden';
-                            filenameText.style.textOverflow = 'ellipsis';
-                            filenameText.style.whiteSpace = 'nowrap';
-                        }
-                    }
-                });
-            });
-        }
-        
-        // Run on load and after mutations
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fixFileSizeAlignment);
-        } else {
-            fixFileSizeAlignment();
-        }
-        
-        // Watch for Streamlit updates
-        const observer = new MutationObserver(fixFileSizeAlignment);
-        observer.observe(document.body, { childList: true, subtree: true });
-        
-        // Also run periodically to catch Streamlit renders
-        setInterval(fixFileSizeAlignment, 500);
-        
-        // Replace sidebar toggle button icon with custom icon
-        function replaceSidebarIcon() {
-            const sidebarButton = document.querySelector('[data-testid="stSidebarCollapseButton"]');
-            if (!sidebarButton) return;
-            
-            // Check if already replaced
-            if (sidebarButton.querySelector('.custom-sidebar-icon')) return;
-            
-            // Remove existing SVG icons
-            const existingSvgs = sidebarButton.querySelectorAll('svg');
-            existingSvgs.forEach(svg => svg.remove());
-            
-            // Create custom menu icon SVG (hamburger/three lines)
-            const customIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            customIcon.setAttribute('class', 'custom-sidebar-icon');
-            customIcon.setAttribute('viewBox', '0 0 24 24');
-            customIcon.setAttribute('width', '24');
-            customIcon.setAttribute('height', '24');
-            customIcon.setAttribute('fill', 'none');
-            customIcon.setAttribute('stroke', 'currentColor');
-            customIcon.setAttribute('stroke-width', '2');
-            customIcon.setAttribute('stroke-linecap', 'round');
-            customIcon.setAttribute('stroke-linejoin', 'round');
-            
-            // Create three horizontal lines (hamburger menu icon)
-            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line1.setAttribute('x1', '3');
-            line1.setAttribute('y1', '6');
-            line1.setAttribute('x2', '21');
-            line1.setAttribute('y2', '6');
-            
-            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line2.setAttribute('x1', '3');
-            line2.setAttribute('y1', '12');
-            line2.setAttribute('x2', '21');
-            line2.setAttribute('y2', '12');
-            
-            const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line3.setAttribute('x1', '3');
-            line3.setAttribute('y1', '18');
-            line3.setAttribute('x2', '21');
-            line3.setAttribute('y2', '18');
-            
-            customIcon.appendChild(line1);
-            customIcon.appendChild(line2);
-            customIcon.appendChild(line3);
-            
-            // Clear button content and add custom icon
-            sidebarButton.innerHTML = '';
-            sidebarButton.appendChild(customIcon);
-            
-            // Hide any text/aria-label
-            const srOnly = sidebarButton.querySelector('.sr-only');
-            if (srOnly) {
-                srOnly.style.cssText = 'position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;';
-            }
-        }
-        
-        // Run on load and after mutations
-        function initSidebarIcon() {
-            replaceSidebarIcon();
-            
-            // Watch for Streamlit updates
-            const iconObserver = new MutationObserver(() => {
-                replaceSidebarIcon();
-            });
-            
-            iconObserver.observe(document.body, { childList: true, subtree: true });
-            
-            // Also run periodically to catch Streamlit renders
-            setInterval(replaceSidebarIcon, 500);
-        }
-        
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initSidebarIcon);
-        } else {
-            initSidebarIcon();
-        }
-        
-        // Wait for Streamlit to be ready
-        waitForStreamlit(initSidebarIcon);
-        </script>
-        
         """,
         unsafe_allow_html=True,
     )
@@ -985,45 +799,39 @@ def upload_section(ingestion: IngestionPipeline):
     
     # If documents exist and upload UI is hidden, show toggle button
     if has_documents and not st.session_state.get("show_upload_ui", True):
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:
-            if st.button("Upload More Documents", type="secondary", use_container_width=False):
-                st.session_state["show_upload_ui"] = True
-                st.rerun()
+        if st.button("Upload More Documents", type="secondary", use_container_width=False):
+            st.session_state["show_upload_ui"] = True
+            st.rerun()
         return None
     
     # Show upload UI
     st.header("Upload Documents", divider="blue")
     
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        uploaded_files = st.file_uploader(
-            "Drag PDF files here or click to browse", 
-            type=["pdf"], 
-            accept_multiple_files=True,
-            help="Upload one or more PDF documents for research. Files will be processed and indexed.",
-            label_visibility="visible"
-        )
-    
-    with col2:
-        if uploaded_files:
-            st.markdown("")  # Spacing
-            ingest_button = st.button(
-                f"Ingest {len(uploaded_files)} file(s)", 
-                type="primary",
-                use_container_width=True
-            )
-        else:
-            ingest_button = False
-    
-    # Hide button if documents exist
+    # Hide button if documents exist - positioned on the left
     if has_documents:
-        col1, col2, col3 = st.columns([2, 1, 2])
-        with col2:
-            if st.button("Hide Upload", type="secondary", use_container_width=True):
-                st.session_state["show_upload_ui"] = False
-                st.rerun()
+        if st.button("Hide Upload", type="secondary", use_container_width=False):
+            st.session_state["show_upload_ui"] = False
+            st.rerun()
+        st.markdown("")  # Spacing after button
+    
+    # Upload area - full width
+    uploaded_files = st.file_uploader(
+        "Drag PDF files here or click to browse", 
+        type=["pdf"], 
+        accept_multiple_files=True,
+        help="Upload one or more PDF documents for research. Files will be processed and indexed.",
+        label_visibility="visible"
+    )
+    
+    # Ingest button below uploader
+    if uploaded_files:
+        ingest_button = st.button(
+            f"Ingest {len(uploaded_files)} file(s)", 
+            type="primary",
+            use_container_width=False
+        )
+    else:
+        ingest_button = False
     
     if uploaded_files and ingest_button:
         with st.spinner(f"Processing {len(uploaded_files)} file(s)..."):
@@ -1056,6 +864,82 @@ def sidebar_documents():
         st.sidebar.info("Upload documents to get started")
 
 
+def display_agent_trajectory(query: str, trajectory: list[dict]) -> None:
+    """Display the agent's step-by-step reasoning process."""
+    with st.expander("Analysis Breakdown", expanded=False):
+        st.caption(f"Showing step-by-step reasoning for: \"{query[:30]}...{query[-30:] if len(query) > 60 else query}\"")
+        
+        with st.container():
+            for step_info in trajectory:
+                step_type = step_info.get("type", "")
+                title = step_info.get("title", "")
+                content = step_info.get("content", "")
+                details = step_info.get("details", "")
+                
+                # Style based on step type
+                if step_type == "planning":
+                    with st.expander(f"{title}", expanded=False):
+                        st.info(content)
+                        if details:
+                            st.caption(details)
+                elif step_type == "decomposition":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(content)
+                        if details:
+                            st.caption(details)
+                elif step_type == "retrieval":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(f"**Query:** {content}")
+                        if details:
+                            st.caption(details)
+                elif step_type == "intermediate_answer":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(content)
+                        if details:
+                            st.caption(details)
+                        # Show full answer in expander
+                        full_answer = step_info.get("full_answer", "")
+                        if full_answer and len(full_answer) > len(content):
+                            with st.expander("View full intermediate answer", expanded=False):
+                                st.markdown(full_answer)
+                        # Show sources if available
+                        sources = step_info.get("sources", [])
+                        if sources:
+                            st.caption(f"Sources: {len(sources)}")
+                elif step_type == "synthesis":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(content)
+                        if details:
+                            st.caption(details)
+                elif step_type == "verification":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(content)
+                        if details:
+                            st.caption(details)
+                elif step_type == "verification_result":
+                    with st.expander(f"{title}", expanded=False):
+                        st.markdown(content)
+                        if details:
+                            st.caption(details)
+                        # Show verification details if available
+                        verification_data = step_info.get("verification_results", [])
+                        if verification_data:
+                            supports = [r for r in verification_data if r.get("status") == "Supports"]
+                            refutes = [r for r in verification_data if r.get("status") == "Refutes"]
+                            not_mentioned = [r for r in verification_data if r.get("status") == "Not Mentioned"]
+                            
+                            if supports:
+                                st.success(f"{len(supports)} claim(s) verified against sources")
+                            if refutes:
+                                st.error(f"{len(refutes)} claim(s) contradicted by sources")
+                            if not_mentioned:
+                                st.warning(f"{len(not_mentioned)} claim(s) extrapolated from sources")
+                elif step_type == "final_answer":
+                    st.success(f"{title}")
+                    if details:
+                        st.caption(details)
+
+
 def display_answer_with_verification(answer_text: str, verification_results: list[dict]) -> None:
     """Display answer with verification status indicators."""
     import re
@@ -1066,6 +950,9 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
     
     # Create a mapping of claims to status
     claim_to_status = {r.get("claim", ""): r.get("status", "Not Mentioned") for r in verification_results}
+    
+    # Track which claims have been matched to avoid duplicate badges
+    matched_claims = set()
     
     # Clean answer text (remove citations section for processing)
     answer_only = answer_text.split("**References:**")[0].strip() if "**References:**" in answer_text else answer_text
@@ -1081,42 +968,58 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
             continue
         
         # Check if any claim matches this sentence (fuzzy match)
+        # Only match claims that haven't been matched yet
         status = None
         best_match = None
+        best_match_score = 0
+        
         for claim, claim_status in claim_to_status.items():
-            if claim and len(claim) > 15:
+            if claim and len(claim) > 15 and claim not in matched_claims:
                 # Check if claim text appears in sentence (first 50 chars for matching)
                 claim_preview = claim[:50].lower().strip()
                 sentence_preview = sentence_clean[:100].lower().strip()
-                # Check for substring match or word overlap
+                
+                match_score = 0
+                # Check for substring match (exact match is best)
                 if claim_preview in sentence_preview:
+                    match_score = 100  # High score for substring match
                     status = claim_status
                     best_match = claim
-                    break
+                    best_match_score = match_score
+                    break  # Exact match, stop searching
                 # Check word overlap for longer claims
                 claim_words = set(w for w in claim_preview.split() if len(w) > 3)
                 sentence_words = set(w for w in sentence_preview.split() if len(w) > 3)
                 if claim_words and len(claim_words & sentence_words) >= 2:
-                    status = claim_status
-                    best_match = claim
-                    break
+                    # Calculate overlap score (more overlap = higher score)
+                    overlap_score = len(claim_words & sentence_words) / len(claim_words) if claim_words else 0
+                    match_score = overlap_score * 50  # Medium score for word overlap
+                    if match_score > best_match_score:
+                        status = claim_status
+                        best_match = claim
+                        best_match_score = match_score
         
-        if status == "Supports":
-            # Add verified badge
-            displayed_text += f'{sentence}<span class="verification-badge verified">Verified</span>'
-        elif status == "Refutes":
-            # Add refuted badge
-            displayed_text += f'{sentence}<span class="verification-badge refuted">Refuted</span>'
-        elif status == "Not Mentioned":
-            # Add unverified badge
-            displayed_text += f'{sentence}<span class="verification-badge unverified">Not Found</span>'
+        # Only add badge if we found a match and it hasn't been used yet
+        if best_match and best_match not in matched_claims:
+            matched_claims.add(best_match)
+            if status == "Supports":
+                # Add verified badge
+                displayed_text += f'{sentence}<span class="verification-badge verified">Verified</span>'
+            elif status == "Refutes":
+                # Add refuted badge
+                displayed_text += f'{sentence}<span class="verification-badge refuted">Refuted</span>'
+            elif status == "Not Mentioned":
+                # Add unverified badge
+                displayed_text += f'{sentence}<span class="verification-badge unverified">Extrapolated</span>'
+            else:
+                displayed_text += sentence
         else:
             displayed_text += sentence
     
     st.markdown(displayed_text, unsafe_allow_html=True)
     
     # Show verification summary in expander
-    with st.expander("🔍 Verification Details", expanded=False):
+    with st.expander("Verification Details", expanded=False):
         supports = [r for r in verification_results if r.get("status") == "Supports"]
         refutes = [r for r in verification_results if r.get("status") == "Refutes"]
         not_mentioned = [r for r in verification_results if r.get("status") == "Not Mentioned"]
@@ -1129,17 +1032,17 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
         if refutes:
             summary_html += f'<span class="verification-badge refuted">{len(refutes)} Refuted</span>'
         if not_mentioned:
-            summary_html += f'<span class="verification-badge unverified">{len(not_mentioned)} Not Found</span>'
+            summary_html += f'<span class="verification-badge unverified">{len(not_mentioned)} Extrapolated</span>'
         
         summary_html += "</div>"
         st.markdown(summary_html, unsafe_allow_html=True)
         
         if supports:
-            st.info(f"✓ **{len(supports)} claim(s) verified** against source documents")
+            st.info(f"**{len(supports)} claim(s) verified** against source documents")
         if refutes:
-            st.error(f"⚠️ **{len(refutes)} claim(s) contradicted** by source documents")
+            st.error(f"**{len(refutes)} claim(s) contradicted** by source documents")
         if not_mentioned:
-            st.warning(f"⚠️ **{len(not_mentioned)} claim(s) not found** in source documents")
+            st.warning(f"**{len(not_mentioned)} claim(s) extrapolated** from source documents")
         
         # Show individual claim details
         if verification_results:
@@ -1150,14 +1053,26 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
                 status = result.get("status", "Not Mentioned")
                 
                 if status == "Supports":
-                    badge_html = '<span class="verification-badge verified">Verified</span>'
-                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+                    badge_class = "verification-badge verified claim-item-badge"
                 elif status == "Refutes":
-                    badge_html = '<span class="verification-badge refuted">Refuted</span>'
-                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+                    badge_class = "verification-badge refuted claim-item-badge"
                 else:
-                    badge_html = '<span class="verification-badge unverified">Not Found</span>'
-                    st.markdown(f"{badge_html} **Claim {i}:** {claim}", unsafe_allow_html=True)
+                    badge_class = "verification-badge unverified claim-item-badge"
+                
+                badge_html = f'<span class="{badge_class}">{"Verified" if status == "Supports" else "Refuted" if status == "Refutes" else "Extrapolated"}</span>'
+                
+                # Use flexbox layout to ensure wrapped text aligns with "Claim X:" label
+                claim_html = f"""
+                <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem; gap: 8px;">
+                    <div style="flex-shrink: 0;">
+                        {badge_html}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong>Claim {i}:</strong> {claim}
+                    </div>
+                </div>
+                """
+                st.markdown(claim_html, unsafe_allow_html=True)
 
 
 def chat_ui(query_pipeline: QueryPipeline):
@@ -1172,17 +1087,44 @@ def chat_ui(query_pipeline: QueryPipeline):
     # Get document IDs for current session to filter search results
     session_doc_ids = [doc_id for doc_id, _, _, _ in st.session_state["ingested_docs"]]
     
-    # Display chat history with verification status
+    # Display chat history with verification status and trajectory
     for idx, (role, content) in enumerate(st.session_state["messages"]):
         with st.chat_message(role):
-            # For assistant messages, check if verification results are available
-            if role == "assistant" and "verification_results" in st.session_state:
-                verification_data = st.session_state["verification_results"]
-                if idx < len(verification_data):
-                    verif = verification_data[idx]
-                    display_answer_with_verification(content, verif.get("verification", []))
+            if role == "assistant":
+                # Check for trajectory first
+                trajectory_shown = False
+                if "agent_trajectory" in st.session_state and st.session_state["agent_trajectory"]:
+                    # Find trajectory for this message (match by answer content)
+                    for traj_entry in st.session_state["agent_trajectory"]:
+                        # Try to match by checking if the answer is in the content
+                        if traj_entry.get("answer") and traj_entry["answer"] in content:
+                            trajectory_data = traj_entry.get("trajectory")
+                            if trajectory_data:
+                                display_agent_trajectory(traj_entry.get("query", ""), trajectory_data)
+                                trajectory_shown = True
+                                break
+                
+                # Check if verification results are available
+                if "verification_results" in st.session_state:
+                    verification_data = st.session_state["verification_results"]
+                    # Extract answer from content (remove references if present)
+                    answer_only = content.split("**References:**")[0].strip() if "**References:**" in content else content
+                    for verif in verification_data:
+                        if verif.get("answer") == answer_only:
+                            display_answer_with_verification(answer_only, verif.get("verification", []))
+                            # Show references separately if they exist
+                            if "**References:**" in content:
+                                references = content.split("**References:**", 1)[1].strip()
+                                st.markdown(f"\n\n**References:**\n{references}")
+                            break
+                    else:
+                        # No verification found, just display the content
+                        if not trajectory_shown:
+                            st.markdown(content)
                 else:
-                    st.markdown(content)
+                    # No verification results, just display the content
+                    if not trajectory_shown:
+                        st.markdown(content)
             else:
                 st.markdown(content)
 
@@ -1194,28 +1136,63 @@ def chat_ui(query_pipeline: QueryPipeline):
             st.markdown(user_input)
 
         with st.chat_message("assistant"):
-            with st.spinner("Searching documents and generating answer..."):
-                # Filter search to only use documents from current session
-                answer, sources = query_pipeline.answer(user_input, allowed_doc_ids=session_doc_ids)
+            # Check if this query used the orchestrator (has trajectory)
+            trajectory_data = None
+            
+            # Create dynamic status display using empty container
+            status_container = st.empty()
+            
+            def update_status(status_text: str):
+                """Update the status text dynamically"""
+                # Use status container to update text with pulsing animation (no background, no emoji)
+                with status_container.container():
+                    st.markdown(f'<p class="status-update-text">{status_text}</p>', unsafe_allow_html=True)
+            
+            # Store status callback in session state so orchestrator/pipeline can use it
+            st.session_state["_status_callback"] = update_status
+            
+            # Start with initial status
+            update_status("Searching documents and generating answer...")
+            
+            # Filter search to only use documents from current session
+            answer, sources = query_pipeline.answer(user_input, allowed_doc_ids=session_doc_ids)
+            
+            # Clear status and callback after processing
+            status_container.empty()
+            if "_status_callback" in st.session_state:
+                del st.session_state["_status_callback"]
                 
-                # Get verification results if available
-                verification_results = []
-                if "verification_results" in st.session_state and st.session_state["verification_results"]:
-                    # Get the latest verification result
-                    latest_verif = st.session_state["verification_results"][-1]
-                    if latest_verif.get("answer") == answer:
-                        verification_results = latest_verif.get("verification", [])
-                
-                # Display answer with verification
-                display_answer_with_verification(answer, verification_results)
-                
-                if sources:
-                    citations = "\n\n**References:**\n" + "\n".join([f"- {s}" for s in sources])
-                    full_response = answer + citations
-                else:
-                    full_response = answer
-                
-                st.session_state["messages"].append(("assistant", full_response))
+                # Get trajectory if available (check after answer is generated)
+                if "agent_trajectory" in st.session_state and st.session_state["agent_trajectory"]:
+                    # Get the latest trajectory
+                    latest_traj = st.session_state["agent_trajectory"][-1]
+                    if latest_traj.get("query") == user_input:
+                        trajectory_data = latest_traj.get("trajectory")
+            
+            # Show trajectory if available (display before answer)
+            if trajectory_data:
+                display_agent_trajectory(user_input, trajectory_data)
+            
+            # Get verification results if available
+            verification_results = []
+            if "verification_results" in st.session_state and st.session_state["verification_results"]:
+                # Get the latest verification result
+                latest_verif = st.session_state["verification_results"][-1]
+                if latest_verif.get("answer") == answer:
+                    verification_results = latest_verif.get("verification", [])
+            
+            # Display answer with verification
+            display_answer_with_verification(answer, verification_results)
+            
+            # Append citations separately
+            if sources:
+                citations = "\n\n**References:**\n" + "\n".join([f"- {s}" for s in sources])
+                st.markdown(citations)
+                full_response = answer + citations
+            else:
+                full_response = answer
+            
+            st.session_state["messages"].append(("assistant", full_response))
 
 
 def main():

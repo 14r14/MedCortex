@@ -1,7 +1,7 @@
 """Orchestrator layer for agentic iterative framework."""
 import json
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 try:
     import streamlit as st
@@ -185,19 +185,57 @@ Only return the JSON list, nothing else:""".format(query=query)
             sub_questions = self.decompose_query(query)
             return [{"question": sq, "type": "TEXT"} for sq in sub_questions]
     
-    def answer_iteratively(self, query: str, allowed_doc_ids: Optional[List[str]] = None) -> Tuple[str, List[str]]:
+    def answer_iteratively(self, query: str, allowed_doc_ids: Optional[List[str]] = None, 
+                           show_trajectory: bool = True,
+                           status_callback: Optional[callable] = None) -> Tuple[str, List[str], Optional[List[Dict]]]:
         """
         Answer query using iterative decomposition and retrieval.
         
         Args:
             query: Original query
             allowed_doc_ids: Optional list of allowed document IDs
+            show_trajectory: Whether to collect trajectory information
+            status_callback: Optional callback function(status_text) to update UI status
             
         Returns:
-            Tuple of (final_answer, source_uris)
+            Tuple of (final_answer, source_uris, trajectory_info)
+            trajectory_info contains step-by-step reasoning process
         """
+        trajectory: Optional[List[Dict]] = [] if show_trajectory else None
+        
+        def update_status(text: str):
+            """Helper to update status if callback available"""
+            if status_callback:
+                status_callback(text)
+        
+        update_status("Analyzing query and planning approach...")
+        
+        if show_trajectory and trajectory is not None:
+            trajectory.append({
+                "step": 0,
+                "type": "planning",
+                "title": "Query Analysis",
+                "content": f"Analyzing query: \"{query}\"",
+                "details": "Decomposing complex query into sub-questions and routing to appropriate tools..."
+            })
+        
         # Step 1: Decompose query into sub-questions (with routing)
+        update_status("Breaking down query into sub-questions...")
         routed_questions = self.route_query(query)
+        
+        update_status(f"Query decomposed into {len(routed_questions)} sub-question(s). Starting analysis...")
+        
+        if show_trajectory and trajectory is not None:
+            plan_description = f"Query decomposed into {len(routed_questions)} sub-question(s):\n"
+            for i, rq in enumerate(routed_questions, 1):
+                plan_description += f"{i}. [{rq.get('type', 'TEXT')}] {rq.get('question', '')}\n"
+            trajectory.append({
+                "step": 1,
+                "type": "decomposition",
+                "title": "Query Decomposition",
+                "content": plan_description.strip(),
+                "details": f"Identified {len(routed_questions)} sub-question(s) requiring {', '.join(set(rq.get('type', 'TEXT') for rq in routed_questions))} analysis"
+            })
         
         # Step 2: Iterative retrieval - loop through sub-questions
         intermediate_answers = []
@@ -209,9 +247,20 @@ Only return the JSON list, nothing else:""".format(query=query)
             q_type = routed_q.get("type", "TEXT")
             
             logger.info(f"Step {i}/{len(routed_questions)}: Answering {q_type} question: {sub_question}")
+            update_status(f"Answering sub-question {i} of {len(routed_questions)}: {sub_question[:80]}{'...' if len(sub_question) > 80 else ''}")
+            
+            if show_trajectory and trajectory is not None:
+                trajectory.append({
+                    "step": i + 1,
+                    "type": "retrieval",
+                    "title": f"Step {i}: {q_type} Analysis",
+                    "content": f"Running query: \"{sub_question}\"",
+                    "details": f"Using {q_type} tool to retrieve and analyze relevant information..."
+                })
             
             if q_type == "TABLE":
                 # Handle table query
+                update_status(f"Sub-question {i} of {len(routed_questions)}: Extracting quantitative data from tables...")
                 from app.rag.table_query import TableQueryPipeline
                 table_pipeline = TableQueryPipeline(self.settings)
                 answer, sources = table_pipeline.answer(sub_question, allowed_doc_ids=allowed_doc_ids)
@@ -219,6 +268,7 @@ Only return the JSON list, nothing else:""".format(query=query)
                 chunks = [answer] if answer else []
             else:
                 # Handle text query using QueryPipeline
+                update_status(f"Sub-question {i} of {len(routed_questions)}: Searching documents for \"{sub_question[:60]}{'...' if len(sub_question) > 60 else ''}\"...")
                 # Disable orchestrator recursion for sub-questions (use direct RAG)
                 answer, sources = self.query_pipeline.answer(
                     sub_question, 
@@ -228,6 +278,21 @@ Only return the JSON list, nothing else:""".format(query=query)
                 # Get source chunks from retrieval (need to access them from query pipeline)
                 # We'll collect chunks from the retrieval step
                 chunks = self._get_source_chunks_for_query(sub_question, allowed_doc_ids)
+            
+            update_status(f"Sub-question {i} of {len(routed_questions)}: Completed - found {len(sources)} source(s)")
+            
+            if show_trajectory and trajectory is not None:
+                # Truncate answer for display (show first 200 chars)
+                answer_preview = answer[:200] + "..." if len(answer) > 200 else answer
+                trajectory.append({
+                    "step": i + 1,
+                    "type": "intermediate_answer",
+                    "title": f"Step {i} Result: {q_type} Analysis",
+                    "content": f"**Question:** {sub_question}\n\n**Answer:** {answer_preview}",
+                    "details": f"Found {len(sources)} source(s)",
+                    "full_answer": answer,
+                    "sources": sources
+                })
             
             intermediate_answers.append({
                 "step": i,
@@ -290,6 +355,18 @@ Synthesized Answer:""".format(
             )
             
             # Verify the final synthesized answer against source chunks
+            update_status("Verifying answer claims against source documents...")
+            verification_results = None
+            
+            if show_trajectory and trajectory is not None:
+                trajectory.append({
+                    "step": len(routed_questions) + 3,
+                    "type": "verification",
+                    "title": "Answer Verification",
+                    "content": "Verifying answer claims against source documents...",
+                    "details": "Checking each factual claim for support, contradiction, or absence in sources"
+                })
+            
             try:
                 from app.rag.verifier import AnswerVerifier
                 verifier = AnswerVerifier(self.settings)
@@ -309,15 +386,83 @@ Synthesized Answer:""".format(
                             "verification": verification_results,
                             "sources": list(dict.fromkeys(all_sources))
                         })
+                    
+                    if show_trajectory and trajectory is not None and verification_results:
+                        # Count verification results by status
+                        supports = len([r for r in verification_results if r.get("status") == "Supports"])
+                        refutes = len([r for r in verification_results if r.get("status") == "Refutes"])
+                        not_mentioned = len([r for r in verification_results if r.get("status") == "Not Mentioned"])
+                        
+                        verification_summary = f"Verified {len(verification_results)} claim(s): "
+                        if supports > 0:
+                            verification_summary += f"{supports} verified, "
+                        if refutes > 0:
+                            verification_summary += f"{refutes} contradicted, "
+                        if not_mentioned > 0:
+                            verification_summary += f"{not_mentioned} not found"
+                        verification_summary = verification_summary.rstrip(", ")
+                        
+                        trajectory.append({
+                            "step": len(routed_questions) + 4,
+                            "type": "verification_result",
+                            "title": "Verification Results",
+                            "content": verification_summary,
+                            "details": f"Checked {len(verification_results)} factual claim(s) against source documents",
+                            "verification_results": verification_results
+                        })
+                elif show_trajectory and trajectory is not None:
+                    trajectory.append({
+                        "step": len(routed_questions) + 4,
+                        "type": "verification_result",
+                        "title": "Verification Skipped",
+                        "content": "No source chunks available for verification",
+                        "details": "Could not verify answer - no source material found"
+                    })
+                
+                if verification_results:
+                    verified_count = len([r for r in verification_results if r.get("status") == "Supports"])
+                    update_status(f"Verification complete: {verified_count}/{len(verification_results)} claims verified")
+                else:
+                    update_status("Verification skipped - no source chunks available")
             except Exception as e:
                 logger.warning(f"Verification failed for synthesized answer: {e}")
+                update_status("Verification encountered an error")
+                if show_trajectory and trajectory is not None:
+                    trajectory.append({
+                        "step": len(routed_questions) + 4,
+                        "type": "verification_result",
+                        "title": "Verification Failed",
+                        "content": f"Verification encountered an error: {str(e)}",
+                        "details": "Could not complete verification process"
+                    })
             
-            return final_answer, list(dict.fromkeys(all_sources))
+            update_status("Finalizing answer...")
+            
+            if show_trajectory and trajectory is not None:
+                trajectory.append({
+                    "step": len(routed_questions) + 5,
+                    "type": "final_answer",
+                    "title": "Final Answer",
+                    "content": "Answer generated successfully",
+                    "details": "Final synthesized answer ready"
+                })
+            
+            update_status("Answer ready!")
+            
+            return final_answer, list(dict.fromkeys(all_sources)), trajectory
         except Exception as e:
             logger.error(f"Synthesis failed: {e}")
             # Fallback: return concatenated answers
             final_answer = "\n\n".join([a["answer"] for a in intermediate_answers])
-            return final_answer, list(dict.fromkeys(all_sources))
+            if show_trajectory and trajectory is not None:
+                trajectory.append({
+                    "step": len(routed_questions) + 3,
+                    "type": "final_answer",
+                    "title": "Final Answer (Fallback)",
+                    "content": "Answer generated from concatenated intermediate answers",
+                    "details": "Synthesis failed, using fallback method"
+                })
+            return final_answer, list(dict.fromkeys(all_sources)), trajectory
     
     def _get_source_chunks_for_query(self, question: str, allowed_doc_ids: Optional[List[str]]) -> List[str]:
         """
