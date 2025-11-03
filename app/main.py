@@ -166,27 +166,157 @@ def inject_custom_css():
             opacity: 0.9 !important;
         }
         
-        /* Buttons */
-        .stButton > button {
-            background-color: var(--ibm-blue);
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            font-weight: 500;
-            transition: background-color 0.2s;
+        /* ============ CURSOR-STYLE BUTTONS ============ */
+        /* Base Cursor-style button - applies to all buttons by default */
+        .stButton > button,
+        [data-testid="stButton"] > button,
+        .stDownloadButton > button,
+        button[data-testid="baseButton-secondary"],
+        button[data-testid="baseButton-primary"] {
+            /* Cursor-style base appearance */
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: var(--dark-gray) !important;
+            border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            border-radius: 6px !important;
+            padding: 0.375rem 0.75rem !important;
+            font-size: 0.8125rem !important;
+            font-weight: 400 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+            box-shadow: none !important;
+            outline: none !important;
+            min-height: auto !important;
+            height: auto !important;
             white-space: nowrap !important;
         }
         
-        /* Upload More Documents button - fixed width and padding */
-        [data-testid="stButton"] > button {
-            min-width: fit-content !important;
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
+        /* Hover state */
+        .stButton > button:hover,
+        [data-testid="stButton"] > button:hover,
+        .stDownloadButton > button:hover,
+        button[data-testid="baseButton-secondary"]:hover,
+        button[data-testid="baseButton-primary"]:hover {
+            background-color: rgba(255, 255, 255, 1) !important;
+            border-color: rgba(0, 0, 0, 0.2) !important;
         }
         
-        .stButton > button:hover {
-            background-color: #0050e6;
-            color: #ffffff;
+        /* Active/pressed state - no special styling */
+        .stButton > button:active,
+        [data-testid="stButton"] > button:active,
+        .stDownloadButton > button:active,
+        button[data-testid="baseButton-secondary"]:active,
+        button[data-testid="baseButton-primary"]:active {
+            /* No active styles - keep same as default */
+        }
+        
+        /* Focus state - no special styling */
+        .stButton > button:focus,
+        [data-testid="stButton"] > button:focus,
+        .stDownloadButton > button:focus,
+        button[data-testid="baseButton-secondary"]:focus,
+        button[data-testid="baseButton-primary"]:focus,
+        .stButton > button:focus-visible,
+        [data-testid="stButton"] > button:focus-visible,
+        .stDownloadButton > button:focus-visible,
+        button[data-testid="baseButton-secondary"]:focus-visible,
+        button[data-testid="baseButton-primary"]:focus-visible {
+            /* No focus styles - keep same as default */
+            outline: none !important;
+        }
+        
+        /* Disabled state */
+        .stButton > button:disabled,
+        [data-testid="stButton"] > button:disabled,
+        .stDownloadButton > button:disabled,
+        button[data-testid="baseButton-secondary"]:disabled,
+        button[data-testid="baseButton-primary"]:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .stButton > button,
+            [data-testid="stButton"] > button,
+            .stDownloadButton > button,
+            button[data-testid="baseButton-secondary"],
+            button[data-testid="baseButton-primary"] {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                color: #f0f0f0 !important;
+                border-color: rgba(255, 255, 255, 0.2) !important;
+            }
+            
+            .stButton > button:hover,
+            [data-testid="stButton"] > button:hover,
+            .stDownloadButton > button:hover,
+            button[data-testid="baseButton-secondary"]:hover,
+            button[data-testid="baseButton-primary"]:hover {
+                background-color: rgba(255, 255, 255, 0.15) !important;
+                border-color: rgba(255, 255, 255, 0.3) !important;
+            }
+            
+            .stButton > button:active,
+            [data-testid="stButton"] > button:active,
+            .stDownloadButton > button:active,
+            button[data-testid="baseButton-secondary"]:active,
+            button[data-testid="baseButton-primary"]:active {
+                /* No active styles - keep same as default */
+            }
+        }
+        
+        /* Context-specific button styles - different styles for different locations */
+        
+        /* Main content buttons */
+        .main .stButton > button {
+            padding: 0.5rem 1rem !important;
+            font-size: 0.875rem !important;
+        }
+        
+        /* Chat area buttons (Add to Report) - smaller */
+        [data-testid="stChatMessage"] ~ .stButton > button,
+        .main [data-testid="stChatMessage"] ~ .stButton > button {
+            padding: 0.375rem 0.75rem !important;
+            font-size: 0.75rem !important;
+        }
+        
+        /* Download buttons - same as base */
+        .stDownloadButton > button {
+            /* Uses base Cursor style */
+        }
+        
+        /* ============ NAVIGATION SECTION (Sidebar) ============ */
+        /* Reduce spacing after Navigation heading */
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] .stMarkdown h3 {
+            margin-bottom: 0.1rem !important;
+            margin-top: 0 !important;
+            padding-bottom: 0 !important;
+            padding-top: 0 !important;
+            line-height: 1.2 !important;
+        }
+        
+        /* Reduce spacing between Navigation heading and buttons */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"]:has(h3) + [data-testid="stVerticalBlock"],
+        [data-testid="stSidebar"] .stMarkdown:has(h3) ~ [data-testid="stVerticalBlock"] {
+            margin-top: 0.1rem !important;
+            padding-top: 0 !important;
+        }
+        
+        /* Reduce spacing on button containers that follow Navigation heading */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"]:has(h3) ~ [data-testid="stVerticalBlock"] .stButton,
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"]:has(h3) + [data-testid="stVerticalBlock"] .stButton {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            margin-bottom: 0.25rem !important;
+        }
+        
+        /* Target the first button after Navigation more directly */
+        [data-testid="stSidebar"] h3 ~ [data-testid="stVerticalBlock"] .stButton,
+        [data-testid="stSidebar"] h3 + [data-testid="stVerticalBlock"] .stButton,
+        [data-testid="stSidebar"] .stMarkdown:has(h3) + [data-testid="stVerticalBlock"] .stButton {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }
         
         /* Headers with dividers - compact */
@@ -791,6 +921,8 @@ def init_state():
         # Hide upload UI by default if documents exist, show if no documents
         has_docs = len(st.session_state.get("ingested_docs", [])) > 0
         st.session_state["show_upload_ui"] = not has_docs
+    if "report_text" not in st.session_state:
+        st.session_state["report_text"] = ""
 
 
 def upload_section(ingestion: IngestionPipeline):
@@ -805,7 +937,7 @@ def upload_section(ingestion: IngestionPipeline):
         return None
     
     # Show upload UI
-    st.header("Upload Documents", divider="blue")
+    st.header("Upload Documents")
     
     # Hide button if documents exist - positioned on the left
     if has_documents:
@@ -849,17 +981,239 @@ def upload_section(ingestion: IngestionPipeline):
     return uploaded_files
 
 
+def add_to_report(answer: str, sources: list[str], query: str = "") -> None:
+    """Add a verified answer to the report."""
+    if "report_text" not in st.session_state:
+        st.session_state["report_text"] = ""
+    
+    # Format the entry (only answer and references, no query)
+    # Add spacing only if report is not empty
+    report_empty = not st.session_state["report_text"].strip()
+    entry = "" if report_empty else "\n\n"
+    # Strip leading/trailing whitespace from answer
+    answer_clean = answer.strip()
+    entry += f"{answer_clean}\n\n"
+    
+    if sources:
+        entry += "**References:**\n"
+        for i, source in enumerate(sources, 1):
+            entry += f"{i}. {source}\n"
+    
+    st.session_state["report_text"] += entry
+
+
+def generate_bibliography(sources: list[str]) -> str:
+    """Generate a formatted bibliography from source URIs."""
+    import re
+    
+    if not sources:
+        return ""
+    
+    bibliography = "\n\n## Bibliography\n\n"
+    
+    # Extract unique documents from sources
+    unique_docs = {}
+    for source in sources:
+        # Find document metadata
+        for doc_info in st.session_state["ingested_docs"]:
+            if len(doc_info) >= 3 and doc_info[2] == source:
+                title = doc_info[4] if len(doc_info) >= 6 and doc_info[4] else None
+                author = doc_info[5] if len(doc_info) >= 6 and doc_info[5] else None
+                filename = doc_info[1] if len(doc_info) >= 2 else None
+                
+                doc_key = source
+                if doc_key not in unique_docs:
+                    unique_docs[doc_key] = {
+                        "title": title,
+                        "author": author,
+                        "filename": filename,
+                        "source_uri": source
+                    }
+                break
+    
+    # Format in APA style (simplified)
+    for i, (doc_key, doc_info) in enumerate(unique_docs.items(), 1):
+        title = doc_info.get("title") or doc_info.get("filename", "").replace(".pdf", "").replace(".PDF", "")
+        author = doc_info.get("author", "Unknown Author")
+        source_uri = doc_info.get("source_uri", "")
+        
+        # Format as APA citation
+        bibliography += f"{i}. {author}. {title}. {source_uri}\n"
+    
+    return bibliography
+
+
+def export_report(format: str = "docx") -> bytes:
+    """Export the research report in the specified format."""
+    from datetime import datetime
+    import re
+    
+    report_text = st.session_state.get("report_text", "")
+    if not report_text:
+        return b""
+    
+    # Extract sources from report text
+    source_pattern = r's3://[^\s\n]+'
+    all_sources = re.findall(source_pattern, report_text)
+    unique_sources = list(dict.fromkeys(all_sources))
+    
+    if format == "docx":
+        try:
+            from docx import Document
+            from docx.shared import Pt
+            
+            doc = Document()
+            
+            # Title
+            doc.add_heading('Research Report', 0)
+            doc.add_paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y')}")
+            doc.add_paragraph("")  # Blank line
+            
+            # Parse report text and convert to DOCX
+            lines = report_text.split('\n')
+            current_para = []
+            in_refs_section = False
+            
+            for line in lines:
+                line_stripped = line.strip()
+                if not line_stripped:
+                    if current_para:
+                        para = doc.add_paragraph(" ".join(current_para))
+                        current_para = []
+                elif line_stripped.startswith("**References:**"):
+                    if current_para:
+                        para = doc.add_paragraph(" ".join(current_para))
+                        current_para = []
+                    doc.add_heading("References", level=2)
+                    in_refs_section = True
+                elif in_refs_section and re.match(r'^\d+\.', line_stripped):
+                    # Reference list item
+                    ref_text = line_stripped
+                    doc.add_paragraph(ref_text, style='List Number')
+                else:
+                    # Regular paragraph text
+                    if line_stripped.startswith("**") and line_stripped.endswith("**"):
+                        # Bold text
+                        current_para.append(line_stripped.replace("**", ""))
+                    else:
+                        current_para.append(line_stripped)
+            
+            if current_para:
+                doc.add_paragraph(" ".join(current_para))
+            
+            # Add bibliography
+            bibliography = generate_bibliography(unique_sources)
+            if bibliography:
+                doc.add_page_break()
+                for line in bibliography.split('\n'):
+                    if line.strip():
+                        if line.startswith("##"):
+                            doc.add_heading(line.replace("##", "").strip(), level=2)
+                        elif re.match(r'^\d+\.', line.strip()):
+                            doc.add_paragraph(line.strip(), style='List Number')
+                        else:
+                            doc.add_paragraph(line.strip())
+            
+            # Save to bytes
+            from io import BytesIO
+            buffer = BytesIO()
+            doc.save(buffer)
+            return buffer.getvalue()
+        except ImportError:
+            return b""
+    
+    elif format == "md":
+        md_content = report_text
+        bibliography = generate_bibliography(unique_sources)
+        if bibliography:
+            md_content += bibliography
+        
+        return md_content.encode('utf-8')
+    
+    return b""
+
+
+def report_page():
+    """Display and manage the research report page."""
+    from datetime import datetime
+    
+    st.header("Research Report")
+    st.caption("Curate your verified findings into a formatted research report")
+    
+    # Export buttons at the top
+    try:
+        from docx import Document
+        DOCX_AVAILABLE = True
+    except ImportError:
+        DOCX_AVAILABLE = False
+    
+    col1, col2 = st.columns([1, 4])
+    
+    with col1:
+        if DOCX_AVAILABLE:
+            docx_data = export_report("docx")
+            st.download_button(
+                label="Export as DOCX",
+                data=docx_data if docx_data else b"",
+                file_name=f"research_report_{datetime.now().strftime('%Y%m%d')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                disabled=not st.session_state.get("report_text", ""),
+                use_container_width=True
+            )
+        else:
+            st.info("⚠️ python-docx not available. Install it to export as DOCX.")
+    
+    with col2:
+        md_data = export_report("md")
+        st.download_button(
+            label="Export as Markdown",
+            data=md_data if md_data else b"",
+            file_name=f"research_report_{datetime.now().strftime('%Y%m%d')}.md",
+            mime="text/markdown",
+            disabled=not st.session_state.get("report_text", ""),
+            use_container_width=True
+        )
+    
+    st.divider()
+    
+    # Report text area (editable)
+    if not st.session_state.get("report_text", ""):
+        st.info("Your report is empty. Add verified findings from the Research Assistant page to build your report.")
+        st.session_state["report_text"] = ""
+    
+    # Editable text area
+    report_content = st.text_area(
+        "Report Content",
+        value=st.session_state.get("report_text", ""),
+        height=500,
+        help="Edit your report here. Content added via 'Add to Report' buttons will appear here.",
+        label_visibility="collapsed"
+    )
+    
+    # Update session state if user edits
+    if report_content != st.session_state.get("report_text", ""):
+        st.session_state["report_text"] = report_content
+    
+    # Clear button
+    if st.button("🗑️ Clear Report", use_container_width=True):
+        st.session_state["report_text"] = ""
+        st.rerun()
+
+
 def sidebar_documents():
     """Compact sidebar showing only ingested documents."""
     st.sidebar.markdown("### Ingested Documents")
     
     if st.session_state["ingested_docs"]:
         st.sidebar.caption(f"{len(st.session_state['ingested_docs'])} document(s)")
-        for doc_id, name, uri, count in st.session_state["ingested_docs"]:
-            # Truncate long names
-            display_name = name if len(name) <= 35 else name[:32] + "..."
-            st.sidebar.markdown(f"**{display_name}**")
-            st.sidebar.caption(f"{count} chunks")
+        # Updated to handle new format: (doc_id, filename, source_uri, count, title, author)
+        for doc_info in st.session_state["ingested_docs"]:
+            if len(doc_info) >= 4:
+                doc_id, name, uri, count = doc_info[0], doc_info[1], doc_info[2], doc_info[3]
+                # Truncate long names
+                display_name = name if len(name) <= 35 else name[:32] + "..."
+                st.sidebar.markdown(f"**{display_name}**")
+                st.sidebar.caption(f"{count} chunks")
     else:
         st.sidebar.info("Upload documents to get started")
 
@@ -1077,7 +1431,7 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
 
 def chat_ui(query_pipeline: QueryPipeline):
     """Main chat interface."""
-    st.header("Research Assistant", divider="blue")
+    st.header("Research Assistant")
     
     if not st.session_state["ingested_docs"]:
         st.info("Upload documents above to start asking questions about your research materials.")
@@ -1085,12 +1439,30 @@ def chat_ui(query_pipeline: QueryPipeline):
         return
     
     # Get document IDs for current session to filter search results
-    session_doc_ids = [doc_id for doc_id, _, _, _ in st.session_state["ingested_docs"]]
+    # Updated to handle new format: (doc_id, filename, source_uri, count, title, author)
+    session_doc_ids = []
+    for doc_info in st.session_state["ingested_docs"]:
+        if len(doc_info) >= 4:
+            session_doc_ids.append(doc_info[0])  # doc_id is first element
     
     # Display chat history with verification status and trajectory
     for idx, (role, content) in enumerate(st.session_state["messages"]):
         with st.chat_message(role):
             if role == "assistant":
+                # Extract answer and sources from content first
+                answer_only = content.split("**References:**")[0].strip() if "**References:**" in content else content
+                
+                # Extract sources from content
+                sources = []
+                if "**References:**" in content:
+                    refs_text = content.split("**References:**", 1)[1].strip()
+                    # Extract sources from reference list (handles both bullet points and numbered lists)
+                    import re
+                    # Match s3:// URIs, handling both "- s3://..." and "1. s3://..." formats
+                    sources = re.findall(r's3://[^\s\n]+', refs_text)
+                    sources = [s.rstrip('-').strip().lstrip('0123456789. ').strip() for s in sources]
+                    sources = [s for s in sources if s.startswith('s3://')]  # Filter to only valid URIs
+                
                 # Check for trajectory first
                 trajectory_shown = False
                 if "agent_trajectory" in st.session_state and st.session_state["agent_trajectory"]:
@@ -1105,26 +1477,58 @@ def chat_ui(query_pipeline: QueryPipeline):
                                 break
                 
                 # Check if verification results are available
+                verification_results = []
                 if "verification_results" in st.session_state:
                     verification_data = st.session_state["verification_results"]
-                    # Extract answer from content (remove references if present)
-                    answer_only = content.split("**References:**")[0].strip() if "**References:**" in content else content
                     for verif in verification_data:
                         if verif.get("answer") == answer_only:
-                            display_answer_with_verification(answer_only, verif.get("verification", []))
-                            # Show references separately if they exist
-                            if "**References:**" in content:
-                                references = content.split("**References:**", 1)[1].strip()
-                                st.markdown(f"\n\n**References:**\n{references}")
+                            verification_results = verif.get("verification", [])
+                            # Use sources from verification if available, otherwise keep extracted sources
+                            sources = verif.get("sources", sources)
                             break
-                    else:
-                        # No verification found, just display the content
-                        if not trajectory_shown:
-                            st.markdown(content)
+                
+                if verification_results:
+                    display_answer_with_verification(answer_only, verification_results)
+                    # Show references separately if they exist
+                    if "**References:**" in content:
+                        references = content.split("**References:**", 1)[1].strip()
+                        st.markdown(f"\n\n**References:**\n{references}")
                 else:
-                    # No verification results, just display the content
+                    # No verification found, just display the content
                     if not trajectory_shown:
                         st.markdown(content)
+                
+                # Add "Add to Report" button inside chat message context
+                # Use sources extracted above
+                sources_final = sources
+                
+                # Extract query from previous user message
+                query_text = ""
+                if idx > 0 and st.session_state["messages"][idx - 1][0] == "user":
+                    query_text = st.session_state["messages"][idx - 1][1]
+                
+                # Place button inside the chat message, after content
+                button_key = f"add_report_{idx}"
+                report_key = f"_report_item_{idx}_{hash((answer_only, str(sources_final)))}"
+                
+                # Check if answer is actually in the report text (not just the flag)
+                report_text = st.session_state.get("report_text", "")
+                # Check if the answer content is actually present in the report
+                # Use first 100 chars of answer to check if it's in report (more reliable than full text)
+                answer_snippet = answer_only[:100].strip() if len(answer_only) > 100 else answer_only.strip()
+                is_already_added = answer_snippet in report_text if answer_snippet else False
+                
+                if is_already_added:
+                    # Show disabled button if already added
+                    st.button("Already in Report", key=f"report_status_{idx}", disabled=True, use_container_width=False)
+                else:
+                    # Show active button - check state first, then render button
+                    button_clicked = st.button("Add to Report", key=button_key, use_container_width=False)
+                    if button_clicked:
+                        # Add to report immediately
+                        add_to_report(answer_only, sources_final, query_text)
+                        st.session_state[report_key] = True
+                        st.rerun()  # Rerun to update button state
             else:
                 st.markdown(content)
 
@@ -1192,7 +1596,49 @@ def chat_ui(query_pipeline: QueryPipeline):
             else:
                 full_response = answer
             
+            # Add "Add to Report" button inside chat message context
+            report_key = f"_report_new_{hash((answer, str(sources)))}"
+            
+            # Check if answer is actually in the report text (not just the flag)
+            report_text = st.session_state.get("report_text", "")
+            # Check if the answer content is actually present in the report
+            # Use first 100 chars of answer to check if it's in report (more reliable than full text)
+            answer_snippet = answer[:100].strip() if len(answer) > 100 else answer.strip()
+            is_already_added = answer_snippet in report_text if answer_snippet else False
+            
+            if is_already_added:
+                # Show disabled button if already added
+                st.button("Already in Report", key="report_status_new", disabled=True, use_container_width=False)
+            else:
+                # Show active button - check state first, then render button
+                button_clicked = st.button("Add to Report", key="add_report_new", use_container_width=False)
+                if button_clicked:
+                    # Add to report immediately
+                    add_to_report(answer, sources, user_input)
+                    st.session_state[report_key] = True
+                    st.rerun()  # Rerun to update button state
+            
             st.session_state["messages"].append(("assistant", full_response))
+
+
+def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryPipeline):
+    """Research Assistant page - separate route."""
+    st.title("VeriCite")
+    st.caption("Research Assistant • Powered by watsonx.ai • Hybrid Search • Granite-3-8B-Instruct")
+    
+    # Upload section in main area (can be hidden)
+    upload_section(ingestion)
+    
+    # Chat interface
+    chat_ui(query_pipeline)
+
+
+def research_report_page():
+    """Research Report page - separate route."""
+    st.title("VeriCite")
+    st.caption("Research Report • Curate and Export Your Findings")
+    
+    report_page()
 
 
 def main():
@@ -1215,21 +1661,98 @@ def main():
     ingestion = IngestionPipeline(settings)
     query_pipeline = QueryPipeline(settings)
 
-    # Main layout: Title, Upload, Chat
-    st.title("VeriCite")
-    st.caption("Research Assistant • Powered by watsonx.ai • Hybrid Search • Granite-3-8B-Instruct")
+    # Initialize navigation state
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "assistant"
     
-    # Upload section in main area (can be hidden)
-    upload_result = upload_section(ingestion)
+    # Navigation in sidebar - separate pages
+    st.sidebar.markdown("### Navigation")
     
-    # Only show divider if upload UI was shown
-    if st.session_state.get("show_upload_ui", True) and upload_result is not None:
-        st.markdown("---")
+    # Get current page from query params or session state
+    try:
+        query_params = st.query_params
+        if "page" in query_params:
+            current_page = query_params["page"]
+            st.session_state["current_page"] = current_page
+        else:
+            current_page = st.session_state.get("current_page", "assistant")
+    except:
+        # Fallback if query_params not available
+        current_page = st.session_state.get("current_page", "assistant")
     
-    # Chat interface
-    chat_ui(query_pipeline)
+    # Navigation links - use buttons styled as text links
+    # Add JavaScript to mark navigation buttons for CSS targeting
+    st.sidebar.markdown(
+        """
+        <script>
+        (function() {
+            function markNavButtons() {
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) {
+                    setTimeout(markNavButtons, 100);
+                    return;
+                }
+                
+                // Find buttons with specific keys or text content
+                const buttons = sidebar.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    const btnText = btn.textContent || btn.innerText || '';
+                    const btnKey = btn.getAttribute('data-baseweb') || btn.getAttribute('key') || '';
+                    
+                    // Check if it's a navigation button by key or text
+                    if (btnKey.includes('nav_assistant') || 
+                        btnKey.includes('nav_report') ||
+                        btnText.includes('Research Assistant') || 
+                        btnText.includes('Research Report')) {
+                        btn.classList.add('nav-button');
+                    }
+                });
+            }
+            
+            // Run immediately and on DOM updates
+            markNavButtons();
+            setTimeout(markNavButtons, 300);
+            setTimeout(markNavButtons, 600);
+            
+            // Also observe for dynamic changes
+            const observer = new MutationObserver(markNavButtons);
+            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                observer.observe(sidebar, { childList: true, subtree: true });
+            }
+        })();
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
+    nav_assistant = st.sidebar.button("Research Assistant", key="nav_assistant", use_container_width=False, type="secondary")
+    nav_report = st.sidebar.button("Research Report", key="nav_report", use_container_width=False, type="secondary")
     
-    # Sidebar: Just documents list
+    # Handle navigation
+    if nav_assistant:
+        st.session_state["current_page"] = "assistant"
+        try:
+            st.query_params.page = "assistant"
+        except:
+            pass
+        st.rerun()
+    
+    if nav_report:
+        st.session_state["current_page"] = "report"
+        try:
+            st.query_params.page = "report"
+        except:
+            pass
+        st.rerun()
+    
+    # Display content based on selected page - completely separate pages
+    if current_page == "assistant":
+        research_assistant_page(ingestion, query_pipeline)
+    elif current_page == "report":
+        research_report_page()
+    
+    # Sidebar: Documents list below navigation
+    st.sidebar.divider()
     sidebar_documents()
 
 

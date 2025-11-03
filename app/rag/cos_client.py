@@ -18,23 +18,48 @@ class COSClient:
         # Prefer HMAC if keys are present; otherwise use IAM
         if settings.cos_hmac_access_key_id and settings.cos_hmac_secret_access_key:
             self.mode = "hmac"
-            self.client = ibm_boto3.client(
-                "s3",
-                aws_access_key_id=settings.cos_hmac_access_key_id,
-                aws_secret_access_key=settings.cos_hmac_secret_access_key,
-                config=Config(signature_version="s3v4"),
-                endpoint_url=settings.cos_endpoint,
-            )
+            try:
+                self.client = ibm_boto3.client(
+                    "s3",
+                    aws_access_key_id=settings.cos_hmac_access_key_id,
+                    aws_secret_access_key=settings.cos_hmac_secret_access_key,
+                    config=Config(signature_version="s3v4"),
+                    endpoint_url=settings.cos_endpoint,
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to initialize COS client with HMAC authentication: {e}\n"
+                    "Please check your network connection and COS credentials."
+                ) from e
         else:
             self.mode = "iam"
-            self.client = ibm_boto3.client(
-                "s3",
-                ibm_api_key_id=settings.cos_api_key,
-                ibm_service_instance_id=settings.cos_instance_crn,
-                ibm_auth_endpoint=settings.cos_auth_endpoint,
-                config=Config(signature_version="oauth"),
-                endpoint_url=settings.cos_endpoint,
-            )
+            try:
+                self.client = ibm_boto3.client(
+                    "s3",
+                    ibm_api_key_id=settings.cos_api_key,
+                    ibm_service_instance_id=settings.cos_instance_crn,
+                    ibm_auth_endpoint=settings.cos_auth_endpoint,
+                    config=Config(signature_version="oauth"),
+                    endpoint_url=settings.cos_endpoint,
+                )
+            except Exception as e:
+                error_msg = str(e)
+                if "Failed to resolve" in error_msg or "NameResolutionError" in error_msg or "nodename nor servname" in error_msg:
+                    raise RuntimeError(
+                        f"Network connectivity error: Cannot reach IBM Cloud IAM service ({settings.cos_auth_endpoint})\n\n"
+                        "Troubleshooting steps:\n"
+                        "1. Check your internet connection\n"
+                        "2. Verify DNS resolution (try: nslookup iam.cloud.ibm.com or ping iam.cloud.ibm.com)\n"
+                        "3. Check if you're behind a firewall/proxy that blocks IBM Cloud services\n"
+                        "4. If using VPN, ensure it allows access to IBM Cloud endpoints\n"
+                        "5. Try using HMAC authentication instead by setting COS_HMAC_ACCESS_KEY_ID and COS_HMAC_SECRET_ACCESS_KEY\n\n"
+                        f"Original error: {error_msg}"
+                    ) from e
+                else:
+                    raise RuntimeError(
+                        f"Failed to initialize COS client with IAM authentication: {e}\n"
+                        "Please check your network connection, IBM Cloud API key, and COS configuration."
+                    ) from e
 
     def upload_fileobj(self, key: str, fileobj: BinaryIO, content_type: str = "application/pdf") -> str:
         self.client.upload_fileobj(

@@ -1,13 +1,13 @@
 import io
 import uuid
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 from ibm_watsonx_ai.wml_client_error import ApiRequestFailure
 
 from app.config import Settings
 from app.rag.cos_client import COSClient
-from app.rag.pdf_extractor import extract_text_per_page
+from app.rag.pdf_extractor import extract_text_per_page, extract_metadata
 from app.rag.chunker import chunk_pages
 from app.rag.embeddings import EmbeddingClient
 from app.rag.faiss_store import FaissStore
@@ -144,9 +144,15 @@ class IngestionPipeline:
         
         return [], []
     
-    def ingest_pdf(self, doc_id: str, filename: str, source_uri: str) -> int:
+    def ingest_pdf(self, doc_id: str, filename: str, source_uri: str) -> Tuple[int, Dict[str, Optional[str]]]:
         file_stream = self._fetch_cos_stream(source_uri)
         
+        # Extract metadata (title, author) - need to read file first
+        file_stream.seek(0)
+        metadata = extract_metadata(file_stream)
+        
+        # Reset stream for table extraction
+        file_stream.seek(0)
         # Extract tables for TableRAG using camelot
         dataframes = extract_tables_camelot(file_stream, doc_id)
         if dataframes:
@@ -194,7 +200,7 @@ class IngestionPipeline:
         upserted = self.vs.upsert_chunks(records)
         # Also index in BM25 (rebuilds from session state metadata)
         self.bm25.add_chunks(metadata_list)
-        return upserted
+        return upserted, metadata
 
     def _fetch_cos_stream(self, s3_url: str) -> io.BytesIO:
         # s3://bucket/key
