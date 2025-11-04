@@ -2224,6 +2224,97 @@ def research_report_page() -> None:
     report_page()
 
 
+def about_page() -> None:
+    """Display the About page.
+
+    Shows information about MedCortex, its mission, and features.
+    """
+    st.title("About MedCortex")
+    
+    st.markdown("""
+    MedCortex was built to solve the single biggest challenge in modern medical research: **the synthesis headache**. 
+    Researchers, clinicians, and academics are overwhelmed by the sheer volume of literature. Finding information is hard, 
+    but synthesizing it—connecting data, comparing findings, and building a trusted evidence base—is a slow, manual, 
+    and high-anxiety process.
+    
+    Standard AI tools promise speed but lack the required rigor. A "black box" answer is useless in a field that runs on 
+    evidence. Hallucinations aren't just errors; they're a risk.
+    """)
+    
+    st.header("Our Solution: An Analyst, Not a Search Bar")
+    
+    st.markdown("""
+    MedCortex is **not a search engine**. It's an **AI research analyst**.
+    
+    Based on a state-of-the-art agentic framework and powered by IBM watsonx.ai, MedCortex performs the real work of 
+    synthesis. When you ask a complex question, it doesn't just "find" an answer; it creates a plan. You can see this in 
+    the **"Analysis Breakdown,"** where the agent performs Query Analysis and Query Decomposition, executing a multi-step 
+    process just as an expert human researcher would.
+    
+    It intelligently routes your query to the right tool, performing advanced **Hybrid Search** for textual concepts and 
+    separate, structured-data analysis for information locked in tables (**TableRAG**).
+    """)
+    
+    
+    st.header("The Core of MedCortex: Trust Through Verification")
+    
+    st.markdown("""
+    Our **"Analysis Breakdown"** creates transparency. Our **"Verification Engine"** builds trust. MedCortex is a **"glass box."**
+    
+    After generating an answer, the platform performs a crucial third step: it fact-checks every single claim against its 
+    source documents. Findings are clearly marked in the chat with a **"VERIFIED"** tag. If a claim is an AI-generated summary 
+    that cannot be directly supported by the text, it is explicitly labeled as **"REFUTED,"** giving you full control and 
+    transparency.
+    """)
+    
+    
+    st.header("From Analysis to Deliverable")
+    
+    st.markdown("""
+    MedCortex is designed to fit your professional workflow, from initial **"Objectives"** to final **"Deliverables"**. 
+    As you gather verified insights from the Analyst Chat, you can add them to your **"Synthesis Studio."** This curated 
+    workspace is where your analysis becomes a formatted research report, complete with citations. You can then export your 
+    work as a `.docx` or Markdown file, turning days of manual writing into minutes of curation.
+    """)
+    
+    st.markdown("""
+    ### This is MedCortex: Your AI Research Analyst for verifiable, end-to-end synthesis.
+    """)
+    
+    st.title("About the Creator")
+    
+    st.markdown("""
+    MedCortex is built by **Rohan Ramakrishnan**, a student at the University of Southern California (USC) pursuing a unique, interdisciplinary 
+    blend of Computer Science and Business Administration.
+    
+    This project was born from a deep passion for improving human well-being and a great appreciation for the power of new 
+    research in healthcare. The goal was to build a tool that directly addresses the "synthesis headache" by moving beyond 
+    simple search to provide a complete, end-to-end solution for researchers.
+    
+    This approach is informed by his professional experience as a Founding Engineer at an artist super-fan platform and as 
+    a Software Engineer for HackSC. In these roles, he developed a deep knowledge of building end-to-end systems that solve 
+    complex, human-facing problems.
+    
+    MedCortex is the direct application of that end-to-end philosophy. It is designed as a complete, professional workspace 
+    that aligns with the "Objective-driven" and "Phase"-based process of a real research plan. It guides a user from the 
+    rigorous "Analysis Breakdown" of complex queries all the way to a final, verified "Deliverable" in the "Synthesis Studio".
+    
+    When not in front of a keyboard, he is an avid Formula 1 enthusiast, appreciating the blend of high-performance 
+    engineering, data analytics, and mission-driven teamwork that defines the sport.
+    """)
+
+
+def research_about_page() -> None:
+    """Display the About page.
+
+    Shows information about MedCortex, its mission, and features.
+    """
+    st.title("MedCortex")
+    st.caption("Our Mission & Method • How the 'Analysis Breakdown' delivers verified deliverables")
+    
+    about_page()
+
+
 @st.cache_resource
 def get_settings() -> Settings:
     """Load and cache application settings.
@@ -2300,6 +2391,7 @@ def main() -> None:
     # Disable navigation during generation to prevent interruption
     nav_assistant = st.sidebar.button("MedCortex Analyst", key="nav_assistant", use_container_width=True, type="secondary", disabled=is_generating)
     nav_report = st.sidebar.button("Synthesis Studio", key="nav_report", use_container_width=True, type="secondary", disabled=is_generating)
+    nav_about = st.sidebar.button("Platform Overview", key="nav_about", use_container_width=True, type="secondary", disabled=is_generating)
     
     if is_generating:
         st.sidebar.caption("⚠️ Answer generation in progress...")
@@ -2323,11 +2415,22 @@ def main() -> None:
                 pass
             st.rerun()
     
+    if nav_about and not is_generating:
+        if st.session_state.get("current_page") != "about":
+            st.session_state["current_page"] = "about"
+            try:
+                st.query_params.page = "about"
+            except:
+                pass
+            st.rerun()
+    
     # Display content based on selected page - completely separate pages
     if current_page == "assistant":
         research_assistant_page(ingestion, query_pipeline)
     elif current_page == "report":
         research_report_page()
+    elif current_page == "about":
+        research_about_page()
     
     # Sidebar: Documents list below navigation
     st.sidebar.divider()
