@@ -1921,33 +1921,34 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
                 answer_hash = hash((answer_only, str(sorted(sources_final))))
                 report_key = f"_report_item_{answer_hash}"
                 
-                # Check if answer is already in the report (check both flag and text)
+                # Check flag first (more reliable than text search)
+                is_flagged = st.session_state.get(report_key, False)
+                
+                # Check if answer is already in the report text
                 report_text = st.session_state.get("report_text", "")
-                # Check if the answer content is actually present in the report
                 # Use first 100 chars of answer to check if it's in report (more reliable than full text)
                 answer_snippet = answer_only[:100].strip() if len(answer_only) > 100 else answer_only.strip()
                 is_in_text = answer_snippet in report_text if answer_snippet else False
-                is_flagged = st.session_state.get(report_key, False)
                 
                 # If flag is set but answer is not in text, clear the flag (user deleted it)
                 if is_flagged and not is_in_text:
                     st.session_state.pop(report_key, None)
                     is_flagged = False
                 
-                is_already_added = is_in_text or is_flagged
+                is_already_added = is_flagged or is_in_text
                 
                 if is_already_added:
                     # Show disabled button if already added
                     st.button("Already in Synthesis Studio", key=f"report_status_{idx}", disabled=True, use_container_width=False)
                 else:
-                    # Show active button if not already added
+                    # Show active button only if not already added
                     button_clicked = st.button("Add to Synthesis Studio", key=button_key, use_container_width=False)
                     
                     if button_clicked:
+                        # Set flag first to prevent duplicate clicks
+                        st.session_state[report_key] = True
                         # Add to report immediately
                         add_to_report(answer_only, sources_final, query_text)
-                        # Set flag to prevent duplicate additions
-                        st.session_state[report_key] = True
                         # Rerun to update button state
                         st.rerun()
             else:
@@ -2052,33 +2053,34 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
             answer_hash = hash((answer, str(sorted(sources))))
             report_key = f"_report_new_{answer_hash}"
             
-            # Check if answer is already in the report (check both flag and text)
+            # Check flag first (more reliable than text search)
+            is_flagged = st.session_state.get(report_key, False)
+            
+            # Check if answer is already in the report text
             report_text = st.session_state.get("report_text", "")
-            # Check if the answer content is actually present in the report
             # Use first 100 chars of answer to check if it's in report (more reliable than full text)
             answer_snippet = answer[:100].strip() if len(answer) > 100 else answer.strip()
             is_in_text = answer_snippet in report_text if answer_snippet else False
-            is_flagged = st.session_state.get(report_key, False)
             
             # If flag is set but answer is not in text, clear the flag (user deleted it)
             if is_flagged and not is_in_text:
                 st.session_state.pop(report_key, None)
                 is_flagged = False
             
-            is_already_added = is_in_text or is_flagged
+            is_already_added = is_flagged or is_in_text
             
             if is_already_added:
                 # Show disabled button if already added
                 st.button("Already in Synthesis Studio", key="report_status_new", disabled=True, use_container_width=False)
             else:
-                # Show active button if not already added
+                # Show active button only if not already added
                 button_clicked = st.button("Add to Synthesis Studio", key="add_report_new", use_container_width=False)
                 
                 if button_clicked:
+                    # Set flag first to prevent duplicate clicks
+                    st.session_state[report_key] = True
                     # Add to report immediately
                     add_to_report(answer, sources, user_input)
-                    # Set flag to prevent duplicate additions
-                    st.session_state[report_key] = True
                     # Rerun to update button state
                     st.rerun()
             

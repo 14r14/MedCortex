@@ -18,7 +18,7 @@ dependencies = [
   "ibm-cos-sdk>=2.13",
   "python-dotenv>=1.0",
   "rank-bm25>=0.2.2",
-  "camelot-py[cv]>=0.11.0",
+  "camelot-py>=0.11.0",
   "pandas>=2.2",
   "python-docx>=1.1"
 ]

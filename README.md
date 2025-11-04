@@ -310,20 +310,21 @@ For complex multi-hop queries, the system uses an orchestrator-based iterative f
 
 #### Text Processing
 - **PyPDF** (`>=4.2`): PDF text extraction
+- **pdfplumber** (`>=0.11.0`): Enhanced PDF extraction with font size/weight analysis for metadata extraction
 - **LangChain Text Splitters** (`>=0.2`): RecursiveCharacterTextSplitter for chunking
 - **Camelot-py** (`>=0.11.0`): PDF table extraction
   - **Flavor**: `lattice` (for structured tables with clear boundaries)
-  - **Dependencies**: OpenCV (`cv`) for image processing
+  - **Note**: Additional system dependencies may be required (e.g., Ghostscript) depending on the backend
 
 #### Data Processing
 - **Pandas** (`>=2.2`): DataFrame manipulation for table queries
-- **OpenPyXL** (`>=3.1`): Excel file support (dependency)
+
+#### Document Export
+- **python-docx** (`>=1.1`): DOCX export functionality for Synthesis Studio reports
 
 #### Utilities
 - **Pydantic** (`>=2.7`): Data validation and settings management
 - **python-dotenv** (`>=1.0`): Environment variable management
-- **Tenacity** (`>=8.2`): Retry logic for API calls
-- **Requests** (`>=2.31`): HTTP client
 
 ### Session-Based Storage Architecture
 

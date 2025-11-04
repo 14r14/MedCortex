@@ -8,6 +8,30 @@ This guide will help you set up and run MedCortex, the AI research analyst for m
 - IBM Cloud account with watsonx.ai, IBM Cloud Object Storage (COS), and Code Engine
 - `uv` package manager (recommended) or `pip`/`poetry`
 
+## Dependencies
+
+The project dependencies are managed in `pyproject.toml`. Key dependencies include:
+
+- **UI Framework**: `streamlit>=1.37`
+- **Data Validation**: `pydantic>=2.7`
+- **PDF Processing**: `pypdf>=4.2`, `pdfplumber>=0.11.0`
+- **Text Processing**: `langchain-text-splitters>=0.2`
+- **IBM Services**: `ibm-watsonx-ai>=1.1.8`, `ibm-cos-sdk>=2.13`
+- **Vector Search**: `faiss-cpu>=1.7.4`, `numpy>=1.26`
+- **Information Retrieval**: `rank-bm25>=0.2.2`
+- **Table Extraction**: `camelot-py>=0.11.0`, `pandas>=2.2`
+- **Document Export**: `python-docx>=1.1`
+- **Utilities**: `python-dotenv>=1.0`
+
+Install dependencies with:
+```bash
+uv sync
+```
+or
+```bash
+pip install -e .
+```
+
 ## Environment Setup
 
 Set required environment variables via `.env` file or system environment. Required variables include:
