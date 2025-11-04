@@ -15,17 +15,25 @@ class FaissStore:
         self.settings = settings
         self.dim = settings.embedding_dim
         self.session_key = session_key
-        # Initialize session-based storage
-        if session_key not in st.session_state:
-            st.session_state[session_key] = {
+        self.index = None
+        self.metadata: List[Dict[str, Any]] = []
+        # Initialize session-based storage - always ensure it exists
+        self._ensure_session_state()
+        self._init_from_session()
+    
+    def _ensure_session_state(self) -> None:
+        """Ensure session state exists - call this before any session state access."""
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = {
                 "embeddings": [],  # Store raw embeddings
                 "metadata": [],
-                "dim": settings.embedding_dim,
+                "dim": self.settings.embedding_dim,
             }
-        self._init_from_session()
 
     def _init_from_session(self) -> None:
         """Initialize from session state and rebuild index if needed."""
+        # Ensure session bucket exists (defensive in case of reruns during cached resource reuse)
+        self._ensure_session_state()
         session_data = st.session_state[self.session_key]
         self.dim = session_data.get("dim", self.settings.embedding_dim)
         self.metadata: List[Dict[str, Any]] = session_data.get("metadata", [])
@@ -46,6 +54,13 @@ class FaissStore:
 
     def _save_to_session(self) -> None:
         """Save embeddings and metadata to session state."""
+        # Ensure session state exists before accessing
+        if self.session_key not in st.session_state:
+            st.session_state[self.session_key] = {
+                "embeddings": [],
+                "metadata": [],
+                "dim": self.settings.embedding_dim,
+            }
         session_data = st.session_state[self.session_key]
         # Embeddings are already stored in session state during upsert_chunks
         # Metadata is stored here
@@ -66,7 +81,8 @@ class FaissStore:
         if not records:
             return 0
         
-        # Store raw embeddings and metadata in session first
+        # Ensure session state exists before accessing
+        self._ensure_session_state()
         session_data = st.session_state[self.session_key]
         embeddings_raw = [r[5] for r in records]
         session_data["embeddings"].extend(embeddings_raw)
@@ -98,6 +114,18 @@ class FaissStore:
 
     def search(self, query_embedding: List[float], top_k: int = 6, allowed_doc_ids: Optional[List[str]] = None) -> List[dict]:
         """Search with optional filtering by document IDs."""
+        # Ensure session state exists and reload metadata if needed
+        self._ensure_session_state()
+        
+        # Reload metadata from session state to ensure consistency
+        session_data = st.session_state[self.session_key]
+        if session_data.get("metadata"):
+            self.metadata = session_data.get("metadata", [])
+        
+        # If index is None, try to rebuild from session state
+        if self.index is None and session_data.get("embeddings"):
+            self._init_from_session()
+        
         if self.index is None or self.index.ntotal == 0:
             return []
         q = np.array([query_embedding], dtype=np.float32)

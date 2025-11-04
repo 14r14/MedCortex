@@ -6,10 +6,10 @@ from app.config import Settings
 from app.rag.pipeline import IngestionPipeline, QueryPipeline
 
 
-def inject_custom_css():
-    """Inject custom CSS for medical research UI with IBM brand colors."""
-    st.markdown(
-        r"""
+@st.cache_resource
+def get_css_content():
+    """Return CSS content - cached to avoid re-injecting on every rerun."""
+    return r"""
         <style>
         /* IBM Medical Research UI Color Palette */
         
@@ -319,6 +319,29 @@ def inject_custom_css():
             padding-top: 0 !important;
         }
         
+        /* Navigation buttons in sidebar - high contrast for light mode */
+        [data-testid="stSidebar"] .stButton > button,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"] {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            color: #f0f0f0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            font-weight: 500 !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:hover,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover {
+            background-color: rgba(255, 255, 255, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            color: #ffffff !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:disabled,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:disabled {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: rgba(240, 240, 240, 0.5) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+        
         /* Headers with dividers - compact */
         h2 {
             color: var(--dark-gray) !important;
@@ -585,6 +608,48 @@ def inject_custom_css():
             box-shadow: 0 0 0 2px rgba(15, 98, 254, 0.1);
         }
         
+        /* Textarea styling - Cursor-style minimal design */
+        .stTextArea > div > div > textarea {
+            background-color: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            border-radius: 6px !important;
+            padding: 0.75rem 0.875rem !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-size: 0.875rem !important;
+            line-height: 1.6 !important;
+            color: var(--dark-gray) !important;
+            box-shadow: none !important;
+            transition: all 0.15s ease !important;
+            resize: vertical !important;
+            outline: none !important;
+        }
+        
+        .stTextArea > div > div > textarea:focus {
+            border-color: var(--ibm-blue) !important;
+            box-shadow: none !important;
+            outline: none !important;
+            outline-width: 0 !important;
+            outline-style: none !important;
+            outline-color: transparent !important;
+            background-color: #ffffff !important;
+        }
+        
+        .stTextArea > div > div > textarea:focus-visible {
+            outline: none !important;
+            outline-width: 0 !important;
+            outline-style: none !important;
+            outline-color: transparent !important;
+        }
+        
+        .stTextArea > div > div > textarea:hover {
+            border-color: rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        /* Textarea container */
+        .stTextArea > div {
+            background-color: transparent !important;
+        }
+        
         /* Chat input */
         .stChatInputContainer {
             background-color: #ffffff;
@@ -615,9 +680,11 @@ def inject_custom_css():
             line-height: 1.4;
             letter-spacing: 0.02em;
             text-transform: uppercase;
-            min-width: 90px;
+            min-width: 110px;
+            width: auto;
             text-align: center;
             box-sizing: border-box;
+            white-space: nowrap;
         }
         .verification-badge.verified {
             background-color: #24a148;
@@ -843,6 +910,36 @@ def inject_custom_css():
                 color: var(--dark-gray) !important;
             }
             
+            /* Textarea dark mode styling - Cursor-style */
+            .stTextArea > div > div > textarea {
+                background-color: #1a1a1a !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                color: #f0f0f0 !important;
+                box-shadow: none !important;
+                outline: none !important;
+            }
+            
+            .stTextArea > div > div > textarea:focus {
+                border-color: var(--ibm-blue) !important;
+                box-shadow: none !important;
+                outline: none !important;
+                outline-width: 0 !important;
+                outline-style: none !important;
+                outline-color: transparent !important;
+                background-color: #1a1a1a !important;
+            }
+            
+            .stTextArea > div > div > textarea:focus-visible {
+                outline: none !important;
+                outline-width: 0 !important;
+                outline-style: none !important;
+                outline-color: transparent !important;
+            }
+            
+            .stTextArea > div > div > textarea:hover {
+                border-color: rgba(255, 255, 255, 0.3) !important;
+            }
+            
             .stChatInputContainer {
                 background-color: #2a2a2a;
                 border-top: 1px solid var(--medium-gray);
@@ -907,9 +1004,19 @@ def inject_custom_css():
         }
         
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+
+
+def inject_custom_css():
+    """Inject custom CSS for medical research UI with IBM brand colors - optimized with caching."""
+    css_content = get_css_content()
+    # Use a key to ensure CSS is only injected once per session
+    if "_css_injected" not in st.session_state:
+        st.markdown(css_content, unsafe_allow_html=True)
+        st.session_state["_css_injected"] = True
+    else:
+        # Still inject CSS but Streamlit will optimize it
+        st.markdown(css_content, unsafe_allow_html=True)
 
 
 def init_state():
@@ -929,11 +1036,19 @@ def upload_section(ingestion: IngestionPipeline):
     """File upload section in main area."""
     has_documents = len(st.session_state.get("ingested_docs", [])) > 0
     
+    # Check if answer generation is in progress (status callback indicates generation)
+    is_generating = "_status_callback" in st.session_state
+    
     # If documents exist and upload UI is hidden, show toggle button
     if has_documents and not st.session_state.get("show_upload_ui", True):
-        if st.button("Upload More Documents", type="secondary", use_container_width=False):
-            st.session_state["show_upload_ui"] = True
-            st.rerun()
+        if st.button("Upload More Documents", type="secondary", use_container_width=False, disabled=is_generating):
+            # Don't allow state change during generation
+            if not is_generating:
+                st.session_state["show_upload_ui"] = True
+                # Use rerun for navigation state changes
+                st.rerun()
+        if is_generating:
+            st.caption("⚠️ Answer generation in progress - please wait...")
         return None
     
     # Show upload UI
@@ -941,9 +1056,14 @@ def upload_section(ingestion: IngestionPipeline):
     
     # Hide button if documents exist - positioned on the left
     if has_documents:
-        if st.button("Hide Upload", type="secondary", use_container_width=False):
-            st.session_state["show_upload_ui"] = False
-            st.rerun()
+        if st.button("Hide Upload", type="secondary", use_container_width=False, disabled=is_generating):
+            # Don't allow state change during generation
+            if not is_generating:
+                st.session_state["show_upload_ui"] = False
+                # Use rerun for navigation state changes
+                st.rerun()
+        if is_generating:
+            st.caption("⚠️ Answer generation in progress - please wait...")
         st.markdown("")  # Spacing after button
     
     # Upload area - full width
@@ -955,17 +1075,24 @@ def upload_section(ingestion: IngestionPipeline):
         label_visibility="visible"
     )
     
+    # Check if answer generation is in progress
+    is_generating = "_status_callback" in st.session_state
+    
     # Ingest button below uploader
     if uploaded_files:
         ingest_button = st.button(
             f"Ingest {len(uploaded_files)} file(s)", 
             type="primary",
-            use_container_width=False
+            use_container_width=False,
+            disabled=is_generating
         )
+        if is_generating:
+            st.caption("⚠️ Answer generation in progress - please wait before ingesting files...")
     else:
         ingest_button = False
     
-    if uploaded_files and ingest_button:
+    # Don't process during generation to avoid interruption
+    if uploaded_files and ingest_button and not is_generating:
         with st.spinner(f"Processing {len(uploaded_files)} file(s)..."):
             for f in uploaded_files:
                 doc_id = str(uuid.uuid4())
@@ -976,7 +1103,8 @@ def upload_section(ingestion: IngestionPipeline):
         st.success(f"Successfully ingested {len(uploaded_files)} document(s)")
         # Hide upload UI after successful ingestion
         st.session_state["show_upload_ui"] = False
-        st.rerun()  # Refresh to show new documents
+        # Rerun needed to show new documents and update UI
+        st.rerun()
     
     return uploaded_files
 
@@ -1195,19 +1323,21 @@ def report_page():
         st.session_state["report_text"] = report_content
     
     # Clear button
-    if st.button("🗑️ Clear Report", use_container_width=True):
+    if st.button("Clear Report", use_container_width=True):
         st.session_state["report_text"] = ""
+        # Rerun needed to clear the text area
         st.rerun()
 
 
 def sidebar_documents():
-    """Compact sidebar showing only ingested documents."""
+    """Compact sidebar showing only ingested documents - optimized."""
     st.sidebar.markdown("### Ingested Documents")
     
-    if st.session_state["ingested_docs"]:
-        st.sidebar.caption(f"{len(st.session_state['ingested_docs'])} document(s)")
+    ingested_docs = st.session_state.get("ingested_docs", [])
+    if ingested_docs:
+        st.sidebar.caption(f"{len(ingested_docs)} document(s)")
         # Updated to handle new format: (doc_id, filename, source_uri, count, title, author)
-        for doc_info in st.session_state["ingested_docs"]:
+        for doc_info in ingested_docs:
             if len(doc_info) >= 4:
                 doc_id, name, uri, count = doc_info[0], doc_info[1], doc_info[2], doc_info[3]
                 # Truncate long names
@@ -1446,7 +1576,9 @@ def chat_ui(query_pipeline: QueryPipeline):
             session_doc_ids.append(doc_info[0])  # doc_id is first element
     
     # Display chat history with verification status and trajectory
-    for idx, (role, content) in enumerate(st.session_state["messages"]):
+    # Use cached rendering to avoid unnecessary recomputation
+    messages = st.session_state.get("messages", [])
+    for idx, (role, content) in enumerate(messages):
         with st.chat_message(role):
             if role == "assistant":
                 # Extract answer and sources from content first
@@ -1504,31 +1636,36 @@ def chat_ui(query_pipeline: QueryPipeline):
                 
                 # Extract query from previous user message
                 query_text = ""
-                if idx > 0 and st.session_state["messages"][idx - 1][0] == "user":
-                    query_text = st.session_state["messages"][idx - 1][1]
+                if idx > 0 and messages[idx - 1][0] == "user":
+                    query_text = messages[idx - 1][1]
                 
                 # Place button inside the chat message, after content
                 button_key = f"add_report_{idx}"
-                report_key = f"_report_item_{idx}_{hash((answer_only, str(sources_final)))}"
+                # Use a stable key based on answer content hash
+                answer_hash = hash((answer_only, str(sources_final)))
+                report_key = f"_report_item_{answer_hash}"
                 
-                # Check if answer is actually in the report text (not just the flag)
+                # Check if answer is already in the report (check both flag and text)
                 report_text = st.session_state.get("report_text", "")
                 # Check if the answer content is actually present in the report
                 # Use first 100 chars of answer to check if it's in report (more reliable than full text)
                 answer_snippet = answer_only[:100].strip() if len(answer_only) > 100 else answer_only.strip()
-                is_already_added = answer_snippet in report_text if answer_snippet else False
+                is_in_text = answer_snippet in report_text if answer_snippet else False
+                is_flagged = st.session_state.get(report_key, False)
+                is_already_added = is_in_text or is_flagged
                 
                 if is_already_added:
                     # Show disabled button if already added
                     st.button("Already in Report", key=f"report_status_{idx}", disabled=True, use_container_width=False)
                 else:
-                    # Show active button - check state first, then render button
-                    button_clicked = st.button("Add to Report", key=button_key, use_container_width=False)
-                    if button_clicked:
+                    # Show active button
+                    if st.button("Add to Report", key=button_key, use_container_width=False):
                         # Add to report immediately
                         add_to_report(answer_only, sources_final, query_text)
+                        # Set flag to prevent duplicate additions
                         st.session_state[report_key] = True
-                        st.rerun()  # Rerun to update button state
+                        # Rerun to update button state
+                        st.rerun()
             else:
                 st.markdown(content)
 
@@ -1597,26 +1734,31 @@ def chat_ui(query_pipeline: QueryPipeline):
                 full_response = answer
             
             # Add "Add to Report" button inside chat message context
-            report_key = f"_report_new_{hash((answer, str(sources)))}"
+            # Use a stable key based on answer content hash
+            answer_hash = hash((answer, str(sources)))
+            report_key = f"_report_new_{answer_hash}"
             
-            # Check if answer is actually in the report text (not just the flag)
+            # Check if answer is already in the report (check both flag and text)
             report_text = st.session_state.get("report_text", "")
             # Check if the answer content is actually present in the report
             # Use first 100 chars of answer to check if it's in report (more reliable than full text)
             answer_snippet = answer[:100].strip() if len(answer) > 100 else answer.strip()
-            is_already_added = answer_snippet in report_text if answer_snippet else False
+            is_in_text = answer_snippet in report_text if answer_snippet else False
+            is_flagged = st.session_state.get(report_key, False)
+            is_already_added = is_in_text or is_flagged
             
             if is_already_added:
                 # Show disabled button if already added
                 st.button("Already in Report", key="report_status_new", disabled=True, use_container_width=False)
             else:
-                # Show active button - check state first, then render button
-                button_clicked = st.button("Add to Report", key="add_report_new", use_container_width=False)
-                if button_clicked:
+                # Show active button
+                if st.button("Add to Report", key="add_report_new", use_container_width=False):
                     # Add to report immediately
                     add_to_report(answer, sources, user_input)
+                    # Set flag to prevent duplicate additions
                     st.session_state[report_key] = True
-                    st.rerun()  # Rerun to update button state
+                    # Rerun to update button state
+                    st.rerun()
             
             st.session_state["messages"].append(("assistant", full_response))
 
@@ -1641,6 +1783,19 @@ def research_report_page():
     report_page()
 
 
+@st.cache_resource
+def get_settings():
+    """Cache settings loading to avoid reloading on every rerun."""
+    load_dotenv()
+    return Settings.from_env()
+
+
+@st.cache_resource
+def get_pipelines(settings):
+    """Cache pipeline initialization to avoid recreating on every rerun."""
+    return IngestionPipeline(settings), QueryPipeline(settings)
+
+
 def main():
     # Set page config for VeriCite branding
     st.set_page_config(
@@ -1650,16 +1805,15 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # Load local .env for development
-    load_dotenv()
-    settings = Settings.from_env()
+    # Load settings (cached)
+    settings = get_settings()
     init_state()
     
-    # Inject custom CSS for medical research UI
+    # Inject custom CSS for medical research UI (optimized)
     inject_custom_css()
 
-    ingestion = IngestionPipeline(settings)
-    query_pipeline = QueryPipeline(settings)
+    # Get pipelines (cached)
+    ingestion, query_pipeline = get_pipelines(settings)
 
     # Initialize navigation state
     if "current_page" not in st.session_state:
@@ -1680,70 +1834,35 @@ def main():
         # Fallback if query_params not available
         current_page = st.session_state.get("current_page", "assistant")
     
-    # Navigation links - use buttons styled as text links
-    # Add JavaScript to mark navigation buttons for CSS targeting
-    st.sidebar.markdown(
-        """
-        <script>
-        (function() {
-            function markNavButtons() {
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (!sidebar) {
-                    setTimeout(markNavButtons, 100);
-                    return;
-                }
-                
-                // Find buttons with specific keys or text content
-                const buttons = sidebar.querySelectorAll('button');
-                buttons.forEach(btn => {
-                    const btnText = btn.textContent || btn.innerText || '';
-                    const btnKey = btn.getAttribute('data-baseweb') || btn.getAttribute('key') || '';
-                    
-                    // Check if it's a navigation button by key or text
-                    if (btnKey.includes('nav_assistant') || 
-                        btnKey.includes('nav_report') ||
-                        btnText.includes('Research Assistant') || 
-                        btnText.includes('Research Report')) {
-                        btn.classList.add('nav-button');
-                    }
-                });
-            }
-            
-            // Run immediately and on DOM updates
-            markNavButtons();
-            setTimeout(markNavButtons, 300);
-            setTimeout(markNavButtons, 600);
-            
-            // Also observe for dynamic changes
-            const observer = new MutationObserver(markNavButtons);
-            const sidebar = document.querySelector('[data-testid="stSidebar"]');
-            if (sidebar) {
-                observer.observe(sidebar, { childList: true, subtree: true });
-            }
-        })();
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-    nav_assistant = st.sidebar.button("Research Assistant", key="nav_assistant", use_container_width=False, type="secondary")
-    nav_report = st.sidebar.button("Research Report", key="nav_report", use_container_width=False, type="secondary")
+    # Check if answer generation is in progress
+    is_generating = "_status_callback" in st.session_state
     
-    # Handle navigation
-    if nav_assistant:
-        st.session_state["current_page"] = "assistant"
-        try:
-            st.query_params.page = "assistant"
-        except:
-            pass
-        st.rerun()
+    # Navigation links - optimized to reduce reruns
+    # Disable navigation during generation to prevent interruption
+    nav_assistant = st.sidebar.button("Research Assistant", key="nav_assistant", use_container_width=False, type="secondary", disabled=is_generating)
+    nav_report = st.sidebar.button("Research Report", key="nav_report", use_container_width=False, type="secondary", disabled=is_generating)
     
-    if nav_report:
-        st.session_state["current_page"] = "report"
-        try:
-            st.query_params.page = "report"
-        except:
-            pass
-        st.rerun()
+    if is_generating:
+        st.sidebar.caption("⚠️ Answer generation in progress...")
+    
+    # Handle navigation - only rerun if page actually changes and not during generation
+    if nav_assistant and not is_generating:
+        if st.session_state.get("current_page") != "assistant":
+            st.session_state["current_page"] = "assistant"
+            try:
+                st.query_params.page = "assistant"
+            except:
+                pass
+            st.rerun()
+    
+    if nav_report and not is_generating:
+        if st.session_state.get("current_page") != "report":
+            st.session_state["current_page"] = "report"
+            try:
+                st.query_params.page = "report"
+            except:
+                pass
+            st.rerun()
     
     # Display content based on selected page - completely separate pages
     if current_page == "assistant":
