@@ -15,7 +15,7 @@ When you ask a complex question, a simple RAG tool will fail. MedCortex excels h
 
 ### 2. Built-in Claim Verification (The "Trust Layer")
 
-MedCortex targets the number one anxiety of using AI for research: hallucinations. Every generated claim is automatically fact-checked against its source documents using a Natural Language Inference (NLI) model. Findings in the chat are clearly and instantly tagged as "VERIFIED" or "UNSUPPORTED" (like the "NOT FOUND" label), giving you full transparency and the confidence to use its output.
+MedCortex targets the number one anxiety of using AI for research: hallucinations. Every generated claim is automatically fact-checked against its source documents using a Natural Language Inference (NLI) model. Findings in the chat are clearly and instantly tagged as "VERIFIED" or "REFUTED" (like the "EXTRAPOLATED" label), giving you full transparency and the confidence to use its output.
 
 ### 3. A Complete Workspace (The "Synthesis Studio")
 
