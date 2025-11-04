@@ -1,4 +1,4 @@
-# MedCortexAI
+# MedCortex
 ## Research Analyst • Verifiable Synthesis • Powered by watsonx.ai
 
 MedCortex is an advanced AI research analyst designed for medical professionals, scientists, and academics. It's built to solve the "information synthesis headache"—the overwhelming and manual process of finding, analyzing, and citing information from dense scientific literature.
