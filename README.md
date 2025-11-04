@@ -1,46 +1,45 @@
-# MedCortex: The AI Medical Research Assistant
+# MedCortexAI Research Analyst • Verifiable Synthesis • Powered by watsonx.ai
 
-MedCortex is a production-ready, enterprise-grade AI assistant designed to help medical and clinical researchers synthesize vast amounts of scientific literature.   
+MedCortex is an advanced AI research analyst designed for medical professionals, scientists, and academics. It's built to solve the "information synthesis headache"—the overwhelming and manual process of finding, analyzing, and citing information from dense scientific literature.
 
-Researchers are often overwhelmed by the volume of new papers, making it difficult to find and synthesize relevant information. This Retrieval-Augmented Generation (RAG) agent  solves this by ingesting a library of PDF documents and providing accurate, synthesized answers grounded in verifiable, citable sources.   
+This is not just another "chat with your docs" app. MedCortex is a complete, agentic workspace that moves beyond simple search to provide deep analysis, trustworthy verification, and a final, exportable deliverable.
 
-This application is built as a cloud-native, containerized application ready for deployment on IBM Cloud Code Engine, leveraging a modern Python stack and powerful services from IBM Cloud.
+## Value Propositions
 
-## ✨ Core Features
+The MedCortex platform is built on three core principles that directly address the pain points of medical researchers.
 
-### Core RAG Pipeline
+### 1. Advanced Agentic Reasoning (The "Analysis Breakdown")
 
-- **Advanced Document Ingestion**: Features multi-PDF parallel processing with automatic text extraction (PyPDF).
+When you ask a complex question, a simple RAG tool will fail. MedCortex excels here. As shown in the UI, it features an "Analysis Breakdown" (inspired by "Chain of Thought" reasoning). It performs Query Analysis and Query Decomposition before answering, executing a multi-step plan to retrieve and analyze information from both unstructured text and structured tables.
 
-- **Intelligent Text Chunking**: Uses RecursiveCharacterTextSplitter with semantic overlap to preserve the context and meaning of complex medical text.   
+### 2. Built-in Claim Verification (The "Trust Layer")
 
-- **High-Performance Vector Search**: Employs a local FAISS index for efficient, low-latency similarity search on high-dimensional embeddings.   
+MedCortex targets the number one anxiety of using AI for research: hallucinations. Every generated claim is automatically fact-checked against its source documents using a Natural Language Inference (NLI) model. Findings in the chat are clearly and instantly tagged as "VERIFIED" or "UNSUPPORTED" (like the "NOT FOUND" label), giving you full transparency and the confidence to use its output.
 
-- **Semantic Retrieval System**: A configurable top-K retriever with automatic deduplication of sources to ensure a clean context.
+### 3. A Complete Workspace (The "Synthesis Studio")
 
-### Intelligent Answer Generation (with watsonx.ai)
+Your workflow doesn't end with an answer. As you find verified insights in the chat, you can add them to the "Synthesis Studio". This is your curation workspace, where you build your final "Deliverable"—a concept central to any professional research plan. When ready, export your curated, verified findings and citations as a formatted .docx or Markdown file. This feature turns hours of manual report-writing into minutes of curation.
 
-- **Two-Stage Generation**: A sophisticated pipeline that first compresses context from retrieved chunks to distill relevant facts before passing them to the generator for the final answer.
+## What It Does
 
-- **Streaming Generation**: Streams tokens directly from the IBM Granite-3-8B-Instruct model for a real-time, responsive chat experience.   
+- **Chat Analyst**: An interactive chat UI (the "MedCortex Analyst") where you ask complex, natural language questions.
+- **Multi-Modal Ingestion**: Upload your PDF documents. The engine processes heterogeneous data, extracting both unstructured text (for semantic search) and structured tables (for queryable, SQL-like analysis).
+- **Domain-Specific Hybrid Search**: Uses a combination of modern vector search (FAISS) and keyword search (BM25) to find both broad concepts and specific medical terminology (like gene names or drug abbreviations).
+- **Agentic Routing (Text vs. Table)**: The agent's "Query Analysis" step intelligently routes your question to the correct tool—it performs vector search for text-based questions and structured data analysis for table-based questions.
+- **In-Line Verification**: Every generated claim is tagged with VERIFIED or UNSUPPORTED for immediate quality control.
+- **Curated Report Exporting**: The "Synthesis Studio" lets you curate all your verified findings into a single document and export it to .docx or Markdown.
 
-- **Strict Source Attribution**: All generated answers are fully grounded in the provided documents. The system uses a "sources list" in the prompt to prevent the LLM from referencing hallucinated sources.
+## Technology
 
-### Cloud Infrastructure Integration (IBM Cloud)
+This project is built to be an enterprise-grade, cloud-native application.
 
-- **IBM Cloud Object Storage (COS)**: Securely uploads and manages source PDFs using IAM-based authentication, integrated with a scalable S3-compatible API.
-
-- **watsonx.ai Foundation Models**: Uses the latest ModelInference API to connect to IBM's powerful Granite models for generation and embedding.
-
-- **Production-Ready Containerization**: Includes a Dockerfile with multi-stage build optimization, a non-root user, and pre-configured for deployment on IBM Cloud Code Engine.
-
-### User Interface & Architecture
-
-- **Streamlit Single-Page Application**: A modern, real-time chat interface with full message history.
-
-- **Interactive Document Management**: Features a multi-file uploader and a sidebar that tracks ingested documents and their chunk counts.
-
-- **Modern Python Stack**: Built with uv for package management, Pydantic for data validation, and flexible configuration via environment variables (no hardcoded credentials).
+- **Frontend**: Streamlit
+- **AI Orchestration & LLM**: IBM watsonx.ai
+- **Foundation Model**: IBM Granite-3-8B-Instruct
+- **Embedding Model**: MEDTE (a domain-specific model for biomedical text) or `ibm/granite-embedding-30m-english`
+- **Retrieval**: Hybrid Search (FAISS + BM25) with custom signal-based reranking
+- **Verification**: NLI-based claim verification
+- **Deployment**: Containerized for IBM Cloud Code Engine
 
 For setup and running instructions, see [SETUP.md](SETUP.md).
 
