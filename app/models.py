@@ -3,8 +3,6 @@
 This module defines Pydantic models for chunk records and query results.
 """
 
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 
@@ -20,12 +18,13 @@ class ChunkRecord(BaseModel):
         embedding: Embedding vector for the chunk.
         source_uri: URI of the source document.
     """
+
     id: str
     doc_id: str
     page_num: int
     chunk_index: int
     text: str
-    embedding: List[float]
+    embedding: list[float]
     source_uri: str
 
 
@@ -37,8 +36,7 @@ class QueryResult(BaseModel):
         sources: List of source URIs.
         matched_chunks: Optional list of matched chunk records.
     """
+
     answer: str
-    sources: List[str]
-    matched_chunks: Optional[List[ChunkRecord]] = None
-
-
+    sources: list[str]
+    matched_chunks: list[ChunkRecord] | None = None

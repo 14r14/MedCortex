@@ -4,8 +4,8 @@ This module defines the Settings dataclass that loads configuration
 from environment variables.
 """
 
-import os
 from dataclasses import dataclass
+import os
 
 
 @dataclass
@@ -37,6 +37,7 @@ class Settings:
         temperature: Generation temperature.
         embedding_dim: Embedding dimension.
     """
+
     ibm_cloud_api_key: str
     watsonx_region: str
     watsonx_project_id: str
@@ -101,18 +102,13 @@ class Settings:
             cos_endpoint=os.getenv("COS_ENDPOINT", ""),
             cos_bucket=os.getenv("COS_BUCKET", ""),
             cos_instance_crn=os.getenv("COS_INSTANCE_CRN", ""),
-            cos_api_key=os.getenv("COS_API_KEY")
-            or os.getenv("IBM_CLOUD_API_KEY"),
+            cos_api_key=os.getenv("COS_API_KEY") or os.getenv("IBM_CLOUD_API_KEY"),
             cos_auth_endpoint=os.getenv(
                 "COS_AUTH_ENDPOINT",
                 "https://iam.cloud.ibm.com/identity/token",
             ),
-            cos_hmac_access_key_id=os.getenv(
-                "COS_HMAC_ACCESS_KEY_ID", ""
-            ),
-            cos_hmac_secret_access_key=os.getenv(
-                "COS_HMAC_SECRET_ACCESS_KEY", ""
-            ),
+            cos_hmac_access_key_id=os.getenv("COS_HMAC_ACCESS_KEY_ID", ""),
+            cos_hmac_secret_access_key=os.getenv("COS_HMAC_SECRET_ACCESS_KEY", ""),
             milvus_host=os.getenv("MILVUS_HOST", "localhost"),
             milvus_port=int(os.getenv("MILVUS_PORT", "19530")),
             milvus_db=os.getenv("MILVUS_DB"),
@@ -125,5 +121,3 @@ class Settings:
             temperature=float(os.getenv("TEMPERATURE", "0.2")),
             embedding_dim=int(os.getenv("EMBEDDING_DIM", "1024")),
         )
-
-

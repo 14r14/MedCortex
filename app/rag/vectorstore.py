@@ -1,7 +1,11 @@
-import uuid
-from typing import List, Tuple
-
-from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from pymilvus import (
+    Collection,
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    connections,
+    utility,
+)
 
 from app.config import Settings
 
@@ -26,12 +30,18 @@ class MilvusStore:
 
     def _ensure_collection(self) -> None:
         fields = [
-            FieldSchema(name="id", dtype=DataType.VARCHAR, is_primary=True, max_length=64),
+            FieldSchema(
+                name="id", dtype=DataType.VARCHAR, is_primary=True, max_length=64
+            ),
             FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=64),
             FieldSchema(name="page_num", dtype=DataType.INT64),
             FieldSchema(name="chunk_index", dtype=DataType.INT64),
             FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192),
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.settings.embedding_dim),
+            FieldSchema(
+                name="embedding",
+                dtype=DataType.FLOAT_VECTOR,
+                dim=self.settings.embedding_dim,
+            ),
             FieldSchema(name="source_uri", dtype=DataType.VARCHAR, max_length=512),
         ]
         schema = CollectionSchema(fields=fields, description="RAG Chunks")
@@ -51,7 +61,9 @@ class MilvusStore:
 
         self.collection.load()
 
-    def upsert_chunks(self, records: List[Tuple[str, str, int, int, str, List[float], str]]) -> int:
+    def upsert_chunks(
+        self, records: list[tuple[str, str, int, int, str, list[float], str]]
+    ) -> int:
         if not records:
             return 0
         ids, doc_ids, page_nums, chunk_idxs, texts, embeddings, sources = zip(*records)
@@ -69,19 +81,34 @@ class MilvusStore:
         self.collection.flush()
         return len(records)
 
-    def search(self, query_embedding: List[float], top_k: int = 6) -> List[dict]:
+    def search(self, query_embedding: list[float], top_k: int = 6) -> list[dict]:
         results = self.collection.search(
             data=[query_embedding],
             anns_field="embedding",
             param={"metric_type": "IP", "params": {"nprobe": 16}},
             limit=top_k,
-            output_fields=["id", "doc_id", "page_num", "chunk_index", "text", "source_uri"],
+            output_fields=[
+                "id",
+                "doc_id",
+                "page_num",
+                "chunk_index",
+                "text",
+                "source_uri",
+            ],
         )
         hits = []
         for hit in results[0]:
-            rec = {f: hit.entity.get(f) for f in ["id", "doc_id", "page_num", "chunk_index", "text", "source_uri"]}
+            rec = {
+                f: hit.entity.get(f)
+                for f in [
+                    "id",
+                    "doc_id",
+                    "page_num",
+                    "chunk_index",
+                    "text",
+                    "source_uri",
+                ]
+            }
             rec["score"] = hit.distance
             hits.append(rec)
         return hits
-
-

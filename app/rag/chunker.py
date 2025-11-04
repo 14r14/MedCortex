@@ -3,14 +3,10 @@
 This module provides functions for splitting text into chunks.
 """
 
-from typing import List
-
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-def chunk_pages(
-    pages: List[str], chunk_size: int, chunk_overlap: int
-) -> List[str]:
+def chunk_pages(pages: list[str], chunk_size: int, chunk_overlap: int) -> list[str]:
     """Split pages of text into chunks.
 
     Args:
@@ -29,5 +25,3 @@ def chunk_pages(
     )
     full_text = "\n\n".join(pages)
     return splitter.split_text(full_text)
-
-

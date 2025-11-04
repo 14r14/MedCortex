@@ -1,5 +1,3 @@
-import io
-import time
 from typing import BinaryIO
 
 import ibm_boto3
@@ -11,7 +9,11 @@ from app.config import Settings
 class COSClient:
     def __init__(self, settings: Settings):
         self.settings = settings
-        if not settings.cos_endpoint or not settings.cos_bucket or not settings.cos_instance_crn:
+        if (
+            not settings.cos_endpoint
+            or not settings.cos_bucket
+            or not settings.cos_instance_crn
+        ):
             raise ValueError(
                 "Missing COS configuration. Please set COS_ENDPOINT, COS_BUCKET, and COS_INSTANCE_CRN."
             )
@@ -44,7 +46,11 @@ class COSClient:
                 )
             except Exception as e:
                 error_msg = str(e)
-                if "Failed to resolve" in error_msg or "NameResolutionError" in error_msg or "nodename nor servname" in error_msg:
+                if (
+                    "Failed to resolve" in error_msg
+                    or "NameResolutionError" in error_msg
+                    or "nodename nor servname" in error_msg
+                ):
                     raise RuntimeError(
                         f"Network connectivity error: Cannot reach IBM Cloud IAM service ({settings.cos_auth_endpoint})\n\n"
                         "Troubleshooting steps:\n"
@@ -55,13 +61,14 @@ class COSClient:
                         "5. Try using HMAC authentication instead by setting COS_HMAC_ACCESS_KEY_ID and COS_HMAC_SECRET_ACCESS_KEY\n\n"
                         f"Original error: {error_msg}"
                     ) from e
-                else:
-                    raise RuntimeError(
-                        f"Failed to initialize COS client with IAM authentication: {e}\n"
-                        "Please check your network connection, IBM Cloud API key, and COS configuration."
-                    ) from e
+                raise RuntimeError(
+                    f"Failed to initialize COS client with IAM authentication: {e}\n"
+                    "Please check your network connection, IBM Cloud API key, and COS configuration."
+                ) from e
 
-    def upload_fileobj(self, key: str, fileobj: BinaryIO, content_type: str = "application/pdf") -> str:
+    def upload_fileobj(
+        self, key: str, fileobj: BinaryIO, content_type: str = "application/pdf"
+    ) -> str:
         self.client.upload_fileobj(
             Fileobj=fileobj,
             Bucket=self.settings.cos_bucket,
@@ -72,11 +79,11 @@ class COSClient:
 
     def generate_presigned_url(self, key: str, expires_in: int = 3600) -> str:
         if self.mode != "hmac":
-            raise RuntimeError("Presigned URLs require HMAC credentials; IAM mode does not support presign.")
+            raise RuntimeError(
+                "Presigned URLs require HMAC credentials; IAM mode does not support presign."
+            )
         return self.client.generate_presigned_url(
             ClientMethod="get_object",
             Params={"Bucket": self.settings.cos_bucket, "Key": key},
             ExpiresIn=expires_in,
         )
-
-

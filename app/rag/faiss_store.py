@@ -1,7 +1,4 @@
-import os
-import json
-from typing import List, Tuple, Dict, Any, Optional
-import io
+from typing import Any
 
 import faiss
 import numpy as np
@@ -16,11 +13,11 @@ class FaissStore:
         self.dim = settings.embedding_dim
         self.session_key = session_key
         self.index = None
-        self.metadata: List[Dict[str, Any]] = []
+        self.metadata: list[dict[str, Any]] = []
         # Initialize session-based storage - always ensure it exists
         self._ensure_session_state()
         self._init_from_session()
-    
+
     def _ensure_session_state(self) -> None:
         """Ensure session state exists - call this before any session state access."""
         if self.session_key not in st.session_state:
@@ -36,9 +33,9 @@ class FaissStore:
         self._ensure_session_state()
         session_data = st.session_state[self.session_key]
         self.dim = session_data.get("dim", self.settings.embedding_dim)
-        self.metadata: List[Dict[str, Any]] = session_data.get("metadata", [])
+        self.metadata: list[dict[str, Any]] = session_data.get("metadata", [])
         embeddings = session_data.get("embeddings", [])
-        
+
         # Rebuild FAISS index from stored embeddings if they exist and index is empty
         if embeddings and len(embeddings) > 0:
             embeddings_array = np.array(embeddings, dtype=np.float32)
@@ -77,55 +74,64 @@ class FaissStore:
         self.dim = dim
         self.index = faiss.IndexFlatIP(dim)
 
-    def upsert_chunks(self, records: List[Tuple[str, str, int, int, str, List[float], str]]) -> int:
+    def upsert_chunks(
+        self, records: list[tuple[str, str, int, int, str, list[float], str]]
+    ) -> int:
         if not records:
             return 0
-        
+
         # Ensure session state exists before accessing
         self._ensure_session_state()
         session_data = st.session_state[self.session_key]
         embeddings_raw = [r[5] for r in records]
         session_data["embeddings"].extend(embeddings_raw)
-        
+
         for r in records:
-            self.metadata.append({
-                "id": r[0],
-                "doc_id": r[1],
-                "page_num": r[2],
-                "chunk_index": r[3],
-                "text": r[4],
-                "source_uri": r[6],
-            })
-        
+            self.metadata.append(
+                {
+                    "id": r[0],
+                    "doc_id": r[1],
+                    "page_num": r[2],
+                    "chunk_index": r[3],
+                    "text": r[4],
+                    "source_uri": r[6],
+                }
+            )
+
         # Rebuild index from all stored embeddings to ensure consistency
         all_embeddings = session_data.get("embeddings", [])
         if all_embeddings:
             embeddings_array = np.array(all_embeddings, dtype=np.float32)
             vec_dim = embeddings_array.shape[1]
-            
+
             # Rebuild entire index from all stored embeddings
             # This ensures consistency and avoids duplicates
             self._create_index(vec_dim)
             embeddings_normalized = self._normalize(embeddings_array)
             self.index.add(embeddings_normalized)
-        
+
         self._save_to_session()
         return len(records)
 
-    def search(self, query_embedding: List[float], top_k: int = 6, allowed_doc_ids: Optional[List[str]] = None) -> List[dict]:
+    def search(
+        self,
+        query_embedding: list[float],
+        top_k: int = 6,
+        allowed_doc_ids: list[str] | None = None,
+    ) -> list[dict]:
         """Search with optional filtering by document IDs."""
         # Ensure session state exists and reload metadata if needed
         self._ensure_session_state()
-        
+
         # Reload metadata from session state to ensure consistency
         session_data = st.session_state[self.session_key]
         if session_data.get("metadata"):
             self.metadata = session_data.get("metadata", [])
-        
+
         # If index is None, try to rebuild from session state
         if self.index is None and session_data.get("embeddings"):
             self._init_from_session()
-        
+
         if self.index is None or self.index.ntotal == 0:
             return []
         q = np.array([query_embedding], dtype=np.float32)
@@ -133,7 +139,7 @@ class FaissStore:
         # Search more results initially if we need to filter
         search_k = top_k * 3 if allowed_doc_ids else top_k
         scores, idxs = self.index.search(q, min(search_k, self.index.ntotal))
-        hits: List[dict] = []
+        hits: list[dict] = []
         for score, idx in zip(scores[0].tolist(), idxs[0].tolist()):
             if idx < 0 or idx >= len(self.metadata):
                 continue
@@ -141,12 +147,12 @@ class FaissStore:
             # Filter by allowed document IDs if provided
             if allowed_doc_ids and m.get("doc_id") not in allowed_doc_ids:
                 continue
-            hits.append({
-                **m,
-                "score": float(score),
-            })
+            hits.append(
+                {
+                    **m,
+                    "score": float(score),
+                }
+            )
             if len(hits) >= top_k:
                 break
         return hits
-
-

@@ -1,5 +1,3 @@
-from typing import List
-
 from ibm_watsonx_ai import Credentials
 from ibm_watsonx_ai.foundation_models import Embeddings as WXEmbeddings
 
@@ -19,12 +17,16 @@ class EmbeddingClient:
             credentials=credentials,
         )
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         result = self.client.embed_documents(texts)
         data = result.get_result() if hasattr(result, "get_result") else result
         # Supported shapes
         # 1) {"results": [{"embedding"|"vector"|"values": [...]}, ...]}
-        if isinstance(data, dict) and "results" in data and isinstance(data["results"], list):
+        if (
+            isinstance(data, dict)
+            and "results" in data
+            and isinstance(data["results"], list)
+        ):
             out = []
             for item in data["results"]:
                 if isinstance(item, dict):
@@ -45,14 +47,20 @@ class EmbeddingClient:
         # 4) attribute style
         if hasattr(result, "embeddings"):
             return result.embeddings  # type: ignore[attr-defined]
-        raise RuntimeError(f"Unexpected embeddings response format from watsonx.ai: {type(data)} keys={list(data.keys()) if isinstance(data, dict) else 'n/a'}")
+        raise RuntimeError(
+            f"Unexpected embeddings response format from watsonx.ai: {type(data)} keys={list(data.keys()) if isinstance(data, dict) else 'n/a'}"
+        )
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         result = self.client.embed_query(text)
         data = result.get_result() if hasattr(result, "get_result") else result
         if isinstance(data, dict):
             # {"results": [{"embedding"|"vector"|"values": [...]}, ...]}
-            if "results" in data and isinstance(data["results"], list) and data["results"]:
+            if (
+                "results" in data
+                and isinstance(data["results"], list)
+                and data["results"]
+            ):
                 first = data["results"][0]
                 if isinstance(first, dict):
                     if "embedding" in first:
@@ -63,7 +71,7 @@ class EmbeddingClient:
                         return first["values"]  # type: ignore[return-value]
             if "embedding" in data:
                 return data["embedding"]  # type: ignore[return-value]
-            if "embeddings" in data and data["embeddings"]:
+            if data.get("embeddings"):
                 return data["embeddings"][0]  # type: ignore[return-value]
         # list-shaped: either a single vector or list of vectors
         if isinstance(data, list):
@@ -74,6 +82,6 @@ class EmbeddingClient:
                 return data  # type: ignore[return-value]
         if hasattr(result, "embedding"):
             return result.embedding  # type: ignore[attr-defined]
-        raise RuntimeError(f"Unexpected query embedding response format from watsonx.ai: {type(data)} keys={list(data.keys()) if isinstance(data, dict) else 'n/a'}")
-
-
+        raise RuntimeError(
+            f"Unexpected query embedding response format from watsonx.ai: {type(data)} keys={list(data.keys()) if isinstance(data, dict) else 'n/a'}"
+        )

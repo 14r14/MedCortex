@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 from ibm_watsonx_ai import Credentials
 from ibm_watsonx_ai.foundation_models import ModelInference
@@ -7,12 +6,10 @@ from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
 
 from app.config import Settings
 
-
 SYSTEM_PROMPT = (
     "You are an expert medical research assistant providing highly detailed, comprehensive answers to medical and clinical researchers. "
     "Your audience consists of medical professionals, researchers, and scientists who need precise, thorough information. "
     "Answer only using the provided context. If the answer is not in the context, explicitly state that you don't know. "
-    
     "For medical research queries, provide: "
     "- Specific quantitative data: exact figures, percentages, p-values, confidence intervals, sample sizes, statistical significance levels "
     "- Detailed methodologies: study designs, protocols, inclusion/exclusion criteria, data collection methods "
@@ -21,7 +18,6 @@ SYSTEM_PROMPT = (
     "- Contextual nuances: limitations, confounding factors, study constraints, generalizability concerns "
     "- Technical terminology: Use precise medical and scientific terminology appropriate for researchers "
     "- Comprehensive scope: Address all aspects of the question, including related considerations, implications, and applications "
-    
     "Do not oversimplify or summarize. Medical researchers need complete, accurate, and detailed information with all relevant specifics. "
     "Be thorough and precise. Include all relevant details, figures, methodologies, findings, and nuances from the source material. "
     "Do NOT include placeholder citations like [Source 1], [Source 2], [Table Data], etc. in your answer. "
@@ -42,7 +38,7 @@ class GeneratorClient:
             credentials=credentials,
         )
 
-    def build_prompt(self, question: str, contexts: List[str]) -> str:
+    def build_prompt(self, question: str, contexts: list[str]) -> str:
         # Use full context as provided
         joined = "\n\n".join(contexts)
         return (
@@ -59,7 +55,7 @@ class GeneratorClient:
             "Just provide the detailed answer text itself - sources will be listed separately."
         )
 
-    def build_compression_prompt(self, question: str, contexts: List[str]) -> str:
+    def build_compression_prompt(self, question: str, contexts: list[str]) -> str:
         joined = "\n\n".join(contexts)
         return (
             "Compress the following context into a comprehensive summary relevant to this medical research question. "
@@ -77,21 +73,30 @@ class GeneratorClient:
     def clean_output(self, text: str) -> str:
         """Remove prompt artifacts and structure labels from model output."""
         cleaned = text
-        
+
         # Remove placeholder source citations like [Source 1], [Source 2], etc.
-        cleaned = re.sub(r'\[Source\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'\[Table\s+Data\]', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'\(Source\s+\d+(?:,\s*Source\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
-        
+        cleaned = re.sub(r"\[Source\s+\d+\]", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\[Table\s+Data\]", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(
+            r"\(Source\s+\d+(?:,\s*Source\s+\d+)*\)", "", cleaned, flags=re.IGNORECASE
+        )
+
         # Remove evidence citations like (Evidence 1), (Evidence 2), etc.
-        cleaned = re.sub(r'\(Evidence\s+\d+(?:,\s*Evidence\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'\[Evidence\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'\bEvidence\s+\d+\b', '', cleaned, flags=re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"\(Evidence\s+\d+(?:,\s*Evidence\s+\d+)*\)",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"\[Evidence\s+\d+\]", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\bEvidence\s+\d+\b", "", cleaned, flags=re.IGNORECASE)
+
         # Remove part references like (Part 1), (Part 2), etc.
-        cleaned = re.sub(r'\(Part\s+\d+(?:,\s*Part\s+\d+)*\)', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'\[Part\s+\d+\]', '', cleaned, flags=re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"\(Part\s+\d+(?:,\s*Part\s+\d+)*\)", "", cleaned, flags=re.IGNORECASE
+        )
+        cleaned = re.sub(r"\[Part\s+\d+\]", "", cleaned, flags=re.IGNORECASE)
+
         # Split by common prompt patterns to extract just the actual answers
         # Pattern: "Answer: ..." followed by other prompt elements
         parts = re.split(r"Answer:\s*", cleaned, flags=re.IGNORECASE)
@@ -99,15 +104,24 @@ class GeneratorClient:
             # Take the last "Answer:" section as it's likely the final answer
             cleaned = parts[-1]
             # Remove everything after the next "Source:" or "Question:" or "Context:" label
-            cleaned = re.split(r"Source:\s*|Question:\s*|Context:\s*", cleaned, flags=re.IGNORECASE)[0]
-        
+            cleaned = re.split(
+                r"Source:\s*|Question:\s*|Context:\s*", cleaned, flags=re.IGNORECASE
+            )[0]
+
         # Remove "Source: Context" lines (standalone or inline)
-        cleaned = re.sub(r"^Source:\s*Context\s*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE)
+        cleaned = re.sub(
+            r"^Source:\s*Context\s*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE
+        )
         cleaned = re.sub(r"Source:\s*Context\s*", "", cleaned, flags=re.IGNORECASE)
-        
+
         # Remove "Sources:" section at the end if present
-        cleaned = re.sub(r"\n\s*Sources?\s*:.*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL)
-        
+        cleaned = re.sub(
+            r"\n\s*Sources?\s*:.*$",
+            "",
+            cleaned,
+            flags=re.MULTILINE | re.IGNORECASE | re.DOTALL,
+        )
+
         # Remove meta-commentary paragraphs that describe what the answer includes
         meta_patterns = [
             r"This\s+(?:synthesized\s+)?answer\s+(?:integrates|includes|provides|addresses).*?(?:\n\n|\Z)",
@@ -118,40 +132,61 @@ class GeneratorClient:
         ]
         for pattern in meta_patterns:
             cleaned = re.sub(pattern, "", cleaned, flags=re.DOTALL | re.IGNORECASE)
-        
+
         # Remove paragraphs that start with meta-descriptions
         cleaned = re.sub(
             r"\n\n(?:This|The|Note:|In summary,).*?(?:integrates|includes|provides|addresses|combines|synthesizes).*?(?:information|evidence|sources|data|findings).*?(?:all aspects|comprehensive|detailed|thorough|complete).*?\n\n",
             "\n\n",
             cleaned,
-            flags=re.DOTALL | re.IGNORECASE
+            flags=re.DOTALL | re.IGNORECASE,
         )
-        
+
         # Remove "Question:" sections and everything after them
-        cleaned = re.sub(r"Question:\s*.*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"Question:\s*.*", "", cleaned, flags=re.DOTALL | re.IGNORECASE
+        )
+
         # Remove "Context:" sections (standalone labels, not content)
-        cleaned = re.sub(r"^Context:\s*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"^Context:\s*$", "", cleaned, flags=re.MULTILINE | re.IGNORECASE
+        )
+
         # Remove instruction text
-        cleaned = re.sub(r"Provide a concise, complete answer and cite sources succinctly\.\s*", "", cleaned, flags=re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"Provide a concise, complete answer and cite sources succinctly\.\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
         # Remove system prompt if present
-        cleaned = re.sub(r"You are a helpful assistant.*?say you don't know\.\s*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"You are a helpful assistant.*?say you don't know\.\s*",
+            "",
+            cleaned,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+
         # Remove any repeated prompt structures (catch-all for repeated patterns)
         # Remove if we see "Answer: ... Source: Context" pattern repeated
-        cleaned = re.sub(r"(Answer:.*?Source:\s*Context\s*){2,}", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
-        
+        cleaned = re.sub(
+            r"(Answer:.*?Source:\s*Context\s*){2,}",
+            "",
+            cleaned,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+
         # Remove multiple consecutive newlines
         cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-        
+
         # Final cleanup: remove leading/trailing whitespace and normalize
         cleaned = cleaned.strip()
-        
+
         return cleaned
 
-    def generate(self, question: str, contexts: List[str], temperature: float = 0.2) -> str:
+    def generate(
+        self, question: str, contexts: list[str], temperature: float = 0.2
+    ) -> str:
         prompt = self.build_prompt(question, contexts)
         params = {
             GenParams.TEMPERATURE: float(temperature),
@@ -164,7 +199,7 @@ class GeneratorClient:
         raw_answer = ""
         try:
             stream_resp = self.client.generate_text_stream(prompt=prompt, params=params)
-            text_parts: List[str] = []
+            text_parts: list[str] = []
             for chunk in stream_resp:  # type: ignore[assignment]
                 text_parts.append(str(chunk))
             raw_answer = "".join(text_parts).strip()
@@ -175,11 +210,13 @@ class GeneratorClient:
         if not raw_answer:
             # Fallback: non-stream call
             response = self.client.generate(prompt=prompt, params=params)
-            data = response.get_result() if hasattr(response, "get_result") else response
+            data = (
+                response.get_result() if hasattr(response, "get_result") else response
+            )
             if isinstance(data, str):
                 raw_answer = data
             elif isinstance(data, dict):
-                if "results" in data and data["results"]:
+                if data.get("results"):
                     raw_answer = data["results"][0].get("generated_text", "")
                 elif "generated_text" in data:
                     raw_answer = data["generated_text"]
@@ -189,14 +226,14 @@ class GeneratorClient:
                 raw_answer = response.generated_text  # type: ignore[attr-defined]
             else:
                 raw_answer = str(data)
-        
+
         # Clean the output to remove prompt artifacts
         return self.clean_output(raw_answer)
 
     def generate_from_prompt(self, prompt: str, temperature: float = 0.2) -> str:
         """
         Generate text directly from a raw prompt string.
-        
+
         Useful for special cases like query decomposition, synthesis, etc.
         that need custom prompt formatting.
         """
@@ -210,7 +247,7 @@ class GeneratorClient:
         raw_answer = ""
         try:
             stream_resp = self.client.generate_text_stream(prompt=prompt, params=params)
-            text_parts: List[str] = []
+            text_parts: list[str] = []
             for chunk in stream_resp:
                 text_parts.append(str(chunk))
             raw_answer = "".join(text_parts).strip()
@@ -219,11 +256,13 @@ class GeneratorClient:
 
         if not raw_answer:
             response = self.client.generate(prompt=prompt, params=params)
-            data = response.get_result() if hasattr(response, "get_result") else response
+            data = (
+                response.get_result() if hasattr(response, "get_result") else response
+            )
             if isinstance(data, str):
                 raw_answer = data
             elif isinstance(data, dict):
-                if "results" in data and data["results"]:
+                if data.get("results"):
                     raw_answer = data["results"][0].get("generated_text", "")
                 elif "generated_text" in data:
                     raw_answer = data["generated_text"]
@@ -233,10 +272,12 @@ class GeneratorClient:
                 raw_answer = response.generated_text
             else:
                 raw_answer = str(data)
-        
+
         return self.clean_output(raw_answer)
 
-    def compress_context(self, question: str, contexts: List[str], temperature: float = 0.0) -> str:
+    def compress_context(
+        self, question: str, contexts: list[str], temperature: float = 0.0
+    ) -> str:
         prompt = self.build_compression_prompt(question, contexts)
         params = {
             GenParams.TEMPERATURE: float(temperature),
@@ -247,7 +288,7 @@ class GeneratorClient:
         # Prefer streaming compression (accumulate chunks)
         try:
             chunks = self.client.generate_text_stream(prompt=prompt, params=params)
-            parts: List[str] = []
+            parts: list[str] = []
             for ch in chunks:
                 parts.append(str(ch))
             text = "".join(parts).strip()
@@ -261,7 +302,7 @@ class GeneratorClient:
         if isinstance(data, str):
             return data
         if isinstance(data, dict):
-            if "results" in data and data["results"]:
+            if data.get("results"):
                 return data["results"][0].get("generated_text", "")
             if "generated_text" in data:
                 return data["generated_text"]
@@ -269,5 +310,3 @@ class GeneratorClient:
         if hasattr(resp, "generated_text"):
             return resp.generated_text  # type: ignore[attr-defined]
         return str(data)
-
-
