@@ -2,6 +2,7 @@
 
 import logging
 import re
+from typing import Any
 
 from app.config import Settings
 from app.rag.generator import GeneratorClient
@@ -164,7 +165,7 @@ Answer (only 'Supports', 'Refutes', or 'Not Mentioned'):"""
 
     def verify_answer(
         self, answer: str, source_chunks: list[str]
-    ) -> list[dict[str, any]]:
+    ) -> list[dict[str, Any]]:
         """
         Verify all claims in an answer against source chunks.
 
@@ -209,7 +210,7 @@ Answer (only 'Supports', 'Refutes', or 'Not Mentioned'):"""
         return verification_results
 
     def annotate_answer(
-        self, answer: str, verification_results: list[dict[str, any]]
+        self, answer: str, verification_results: list[dict[str, Any]]
     ) -> str:
         """
         Annotate answer with verification status markers.

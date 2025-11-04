@@ -6,6 +6,7 @@ reasoning using query decomposition and iterative retrieval.
 
 import json
 import logging
+from typing import Callable
 
 try:
     import streamlit as st
@@ -208,7 +209,7 @@ Only return the JSON list, nothing else:"""
         query: str,
         allowed_doc_ids: list[str] | None = None,
         show_trajectory: bool = True,
-        status_callback: callable | None = None,
+        status_callback: Callable[[str], None] | None = None,
     ) -> tuple[str, list[str], list[dict] | None]:
         """Answer query using iterative decomposition and retrieval.
 

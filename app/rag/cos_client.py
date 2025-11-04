@@ -17,6 +17,15 @@ class COSClient:
             raise ValueError(
                 "Missing COS configuration. Please set COS_ENDPOINT, COS_BUCKET, and COS_INSTANCE_CRN."
             )
+        
+        # Normalize endpoint: strip quotes, remove trailing slash, ensure https
+        endpoint = settings.cos_endpoint.strip().strip('"').strip("'").rstrip('/')
+        if not endpoint.startswith(('http://', 'https://')):
+            endpoint = f"https://{endpoint}"
+        elif endpoint.startswith('http://'):
+            # Convert http to https for security
+            endpoint = endpoint.replace('http://', 'https://', 1)
+        
         # Prefer HMAC if keys are present; otherwise use IAM
         if settings.cos_hmac_access_key_id and settings.cos_hmac_secret_access_key:
             self.mode = "hmac"
@@ -26,15 +35,30 @@ class COSClient:
                     aws_access_key_id=settings.cos_hmac_access_key_id,
                     aws_secret_access_key=settings.cos_hmac_secret_access_key,
                     config=Config(signature_version="s3v4"),
-                    endpoint_url=settings.cos_endpoint,
+                    endpoint_url=endpoint,
                 )
             except Exception as e:
+                error_msg = str(e)
+                if "Invalid endpoint" in error_msg or "endpoint" in error_msg.lower():
+                    raise RuntimeError(
+                        f"Invalid COS endpoint format: {endpoint}\n\n"
+                        "Common endpoint formats:\n"
+                        "- Regional: https://s3.{region}.cloud-object-storage.appdomain.cloud\n"
+                        "- Cross-region: https://s3.cloud-object-storage.appdomain.cloud\n"
+                        "- Private: https://s3.{region}.private.cloud-object-storage.appdomain.cloud\n\n"
+                        "Please verify your COS_ENDPOINT environment variable.\n"
+                        f"Original error: {error_msg}"
+                    ) from e
                 raise RuntimeError(
                     f"Failed to initialize COS client with HMAC authentication: {e}\n"
                     "Please check your network connection and COS credentials."
                 ) from e
         else:
             self.mode = "iam"
+            if not settings.cos_api_key:
+                raise ValueError(
+                    "Missing IBM Cloud API key. Please set COS_API_KEY or IBM_CLOUD_API_KEY."
+                )
             try:
                 self.client = ibm_boto3.client(
                     "s3",
@@ -42,7 +66,7 @@ class COSClient:
                     ibm_service_instance_id=settings.cos_instance_crn,
                     ibm_auth_endpoint=settings.cos_auth_endpoint,
                     config=Config(signature_version="oauth"),
-                    endpoint_url=settings.cos_endpoint,
+                    endpoint_url=endpoint,
                 )
             except Exception as e:
                 error_msg = str(e)
@@ -61,9 +85,22 @@ class COSClient:
                         "5. Try using HMAC authentication instead by setting COS_HMAC_ACCESS_KEY_ID and COS_HMAC_SECRET_ACCESS_KEY\n\n"
                         f"Original error: {error_msg}"
                     ) from e
+                if "Invalid endpoint" in error_msg or "endpoint" in error_msg.lower():
+                    raise RuntimeError(
+                        f"Invalid COS endpoint format: {endpoint}\n\n"
+                        "Common endpoint formats:\n"
+                        "- Regional: https://s3.{region}.cloud-object-storage.appdomain.cloud\n"
+                        "- Cross-region: https://s3.cloud-object-storage.appdomain.cloud\n"
+                        "- Private: https://s3.{region}.private.cloud-object-storage.appdomain.cloud\n\n"
+                        "Please verify your COS_ENDPOINT environment variable.\n"
+                        f"Original error: {error_msg}"
+                    ) from e
                 raise RuntimeError(
                     f"Failed to initialize COS client with IAM authentication: {e}\n"
-                    "Please check your network connection, IBM Cloud API key, and COS configuration."
+                    "Please check your network connection, IBM Cloud API key, and COS configuration.\n"
+                    f"Endpoint used: {endpoint}\n"
+                    f"Bucket: {settings.cos_bucket}\n"
+                    f"Instance CRN: {settings.cos_instance_crn[:50]}..."
                 ) from e
 
     def upload_fileobj(
