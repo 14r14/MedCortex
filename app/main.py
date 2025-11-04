@@ -289,7 +289,7 @@ def get_css_content():
         /* Reduce spacing after Navigation heading */
         [data-testid="stSidebar"] h3,
         [data-testid="stSidebar"] .stMarkdown h3 {
-            margin-bottom: 0.1rem !important;
+            margin-bottom: 1rem !important;
             margin-top: 0 !important;
             padding-bottom: 0 !important;
             padding-top: 0 !important;
@@ -1099,7 +1099,17 @@ def upload_section(ingestion: IngestionPipeline):
                 with st.spinner(f"Uploading and ingesting {f.name}..."):
                     source_uri = ingestion.upload_to_cos(doc_id, f.name, f)
                     count = ingestion.ingest_pdf(doc_id, f.name, source_uri)
-                st.session_state["ingested_docs"].append((doc_id, f.name, source_uri, count))
+                # Store document info: (doc_id, filename, source_uri, count, title, author)
+                # ingest_pdf returns (upserted_count, metadata_dict)
+                if isinstance(count, tuple) and len(count) == 2:
+                    chunk_count, metadata = count
+                    title = metadata.get("title") if metadata else None
+                    author = metadata.get("author") if metadata else None
+                else:
+                    chunk_count = count
+                    title = None
+                    author = None
+                st.session_state["ingested_docs"].append((doc_id, f.name, source_uri, chunk_count, title, author))
         st.success(f"Successfully ingested {len(uploaded_files)} document(s)")
         # Hide upload UI after successful ingestion
         st.session_state["show_upload_ui"] = False
@@ -1107,6 +1117,134 @@ def upload_section(ingestion: IngestionPipeline):
         st.rerun()
     
     return uploaded_files
+
+
+def format_references_with_titles(sources: list[str]) -> str:
+    """Format references with document titles and download links."""
+    if not sources:
+        return ""
+    
+    formatted_refs = []
+    ingested_docs = st.session_state.get("ingested_docs", [])
+    
+    for source_uri in sources:
+        # Find document info by source_uri
+        doc_title = None
+        doc_filename = None
+        for doc_info in ingested_docs:
+            if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                doc_filename = doc_info[1] if len(doc_info) >= 2 else None
+                # Get title if available (position 4), fallback to filename
+                if len(doc_info) >= 5:
+                    doc_title = doc_info[4] or doc_filename
+                else:
+                    doc_title = doc_filename
+                break
+        
+        # Create display name
+        display_name = doc_title or doc_filename or source_uri.split("/")[-1] or "Document"
+        
+        # Create download link using Streamlit's download button approach
+        # We'll use a data URI approach or create a download handler
+        # For now, show the title with the source URI as a tooltip/link
+        formatted_refs.append(f"- **{display_name}**")
+    
+    return "\n".join(formatted_refs)
+
+
+def create_download_link(source_uri: str, ingestion: IngestionPipeline) -> str:
+    """Create a download link for a document from COS."""
+    import base64
+    import hashlib
+    
+    # Create a unique key for this download
+    download_key = hashlib.md5(source_uri.encode()).hexdigest()[:16]
+    
+    # Store the source URI in session state for download handler
+    if "download_cache" not in st.session_state:
+        st.session_state["download_cache"] = {}
+    st.session_state["download_cache"][download_key] = source_uri
+    
+    # Return download key that can be used with download button
+    return download_key
+
+
+def download_document_from_cos(download_key: str, ingestion: IngestionPipeline) -> bytes:
+    """Download a document from COS using the download key."""
+    if "download_cache" not in st.session_state:
+        return b""
+    
+    source_uri = st.session_state["download_cache"].get(download_key)
+    if not source_uri:
+        return b""
+    
+    # Fetch from COS
+    try:
+        # Parse s3://bucket/key
+        if not source_uri.startswith("s3://"):
+            return b""
+        
+        _, rest = source_uri.split("s3://", 1)
+        bucket, key = rest.split("/", 1)
+        
+        # Get object from COS
+        obj = ingestion.cos.client.get_object(Bucket=bucket, Key=key)
+        return obj["Body"].read()
+    except Exception as e:
+        st.error(f"Error downloading document: {e}")
+        return b""
+
+
+def _clean_report_flags() -> None:
+    """Clear report flags for answers that are no longer in the report text."""
+    report_text = st.session_state.get("report_text", "")
+    
+    # Get all report flags from session state
+    report_keys = [key for key in st.session_state.keys() if key.startswith("_report_")]
+    
+    # Check messages to find corresponding answers
+    messages = st.session_state.get("messages", [])
+    
+    for key in report_keys:
+        # Extract answer_hash from key (format: "_report_item_{hash}" or "_report_new_{hash}")
+        if "_report_item_" in key:
+            hash_str = key.replace("_report_item_", "")
+        elif "_report_new_" in key:
+            hash_str = key.replace("_report_new_", "")
+        else:
+            continue
+        
+        # Find the corresponding answer in messages
+        answer_found = False
+        for role, content in messages:
+            if role == "assistant":
+                # Try to extract answer from content (before References section)
+                answer_only = content.split("**References:**")[0].strip() if "**References:**" in content else content.strip()
+                
+                # Get sources from content
+                sources = []
+                if "**References:**" in content:
+                    import re
+                    refs_text = content.split("**References:**", 1)[1]
+                    source_uris = re.findall(r's3://[^\s\n]+', refs_text)
+                    sources = source_uris
+                
+                # Calculate hash to match (use consistent string representation)
+                answer_hash = hash((answer_only, str(sorted(sources))))
+                hash_str_match = str(answer_hash)
+                
+                if hash_str_match == hash_str:
+                    # Check if answer is still in report text
+                    answer_snippet = answer_only[:100].strip() if len(answer_only) > 100 else answer_only.strip()
+                    if answer_snippet and answer_snippet not in report_text:
+                        # Answer no longer in report, clear the flag
+                        st.session_state.pop(key, None)
+                    answer_found = True
+                    break
+        
+        # If flag exists but no corresponding message found, clear it
+        if not answer_found:
+            st.session_state.pop(key, None)
 
 
 def add_to_report(answer: str, sources: list[str], query: str = "") -> None:
@@ -1124,8 +1262,27 @@ def add_to_report(answer: str, sources: list[str], query: str = "") -> None:
     
     if sources:
         entry += "**References:**\n"
-        for i, source in enumerate(sources, 1):
-            entry += f"{i}. {source}\n"
+        ingested_docs = st.session_state.get("ingested_docs", [])
+        
+        for i, source_uri in enumerate(sources, 1):
+            # Find document title by source_uri
+            doc_title = None
+            for doc_info in ingested_docs:
+                if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                    # Get title if available (position 4), fallback to filename
+                    if len(doc_info) >= 5:
+                        doc_title = doc_info[4]
+                    if not doc_title and len(doc_info) >= 2:
+                        doc_title = doc_info[1]  # Use filename as fallback
+                    break
+            
+            # Use title if available, otherwise use source URI
+            if doc_title:
+                entry += f"{i}. **{doc_title}**\n"
+            else:
+                # Fallback to filename or source URI
+                display_name = source_uri.split("/")[-1] if "/" in source_uri else source_uri
+                entry += f"{i}. **{display_name}**\n"
     
     st.session_state["report_text"] += entry
 
@@ -1141,11 +1298,13 @@ def generate_bibliography(sources: list[str]) -> str:
     
     # Extract unique documents from sources
     unique_docs = {}
+    ingested_docs = st.session_state.get("ingested_docs", [])
+    
     for source in sources:
         # Find document metadata
-        for doc_info in st.session_state["ingested_docs"]:
+        for doc_info in ingested_docs:
             if len(doc_info) >= 3 and doc_info[2] == source:
-                title = doc_info[4] if len(doc_info) >= 6 and doc_info[4] else None
+                title = doc_info[4] if len(doc_info) >= 5 and doc_info[4] else None
                 author = doc_info[5] if len(doc_info) >= 6 and doc_info[5] else None
                 filename = doc_info[1] if len(doc_info) >= 2 else None
                 
@@ -1159,14 +1318,45 @@ def generate_bibliography(sources: list[str]) -> str:
                     }
                 break
     
-    # Format in APA style (simplified)
+    # Format in APA style
     for i, (doc_key, doc_info) in enumerate(unique_docs.items(), 1):
-        title = doc_info.get("title") or doc_info.get("filename", "").replace(".pdf", "").replace(".PDF", "")
-        author = doc_info.get("author", "Unknown Author")
-        source_uri = doc_info.get("source_uri", "")
+        # Use title if available, fallback to filename, then source URI
+        title = doc_info.get("title")
+        if not title:
+            filename = doc_info.get("filename", "")
+            if filename:
+                title = filename.replace(".pdf", "").replace(".PDF", "")
+            else:
+                source_uri = doc_info.get("source_uri", "")
+                title = source_uri.split("/")[-1] if "/" in source_uri else source_uri
         
-        # Format as APA citation
-        bibliography += f"{i}. {author}. {title}. {source_uri}\n"
+        author = doc_info.get("author")
+        if not author:
+            author = "Unknown Author"
+        
+        # Format as APA citation: Author, A. A. (Year). Title. [Format]. Source
+        # Since we don't have year, we'll use: Author, A. A. (n.d.). Title. [PDF document]
+        # For multiple authors, format as: Author, A. A., & Author, B. B.
+        # Check if author contains multiple authors (comma or "and")
+        if "," in author or " and " in author.lower():
+            # Multiple authors - format properly
+            if " and " in author.lower():
+                # Split by "and" and format
+                authors = [a.strip() for a in re.split(r'\s+and\s+', author, flags=re.IGNORECASE)]
+                if len(authors) == 2:
+                    formatted_author = f"{authors[0]}, & {authors[1]}"
+                else:
+                    # More than 2 authors - last one gets "&"
+                    formatted_author = ", ".join(authors[:-1]) + ", & " + authors[-1]
+            else:
+                # Comma-separated - assume already formatted
+                formatted_author = author
+        else:
+            # Single author
+            formatted_author = author
+        
+        # APA format: Author, A. A. (n.d.). Title. [PDF document].
+        bibliography += f"{i}. {formatted_author} (n.d.). {title}. [PDF document].\n"
     
     return bibliography
 
@@ -1321,10 +1511,14 @@ def report_page():
     # Update session state if user edits
     if report_content != st.session_state.get("report_text", ""):
         st.session_state["report_text"] = report_content
+        # Clear report flags for answers that are no longer in the report
+        _clean_report_flags()
     
     # Clear button
     if st.button("Clear Report", use_container_width=True):
         st.session_state["report_text"] = ""
+        # Clear all report flags when clearing report
+        _clean_report_flags()
         # Rerun needed to clear the text area
         st.rerun()
 
@@ -1339,9 +1533,24 @@ def sidebar_documents():
         # Updated to handle new format: (doc_id, filename, source_uri, count, title, author)
         for doc_info in ingested_docs:
             if len(doc_info) >= 4:
-                doc_id, name, uri, count = doc_info[0], doc_info[1], doc_info[2], doc_info[3]
-                # Truncate long names
-                display_name = name if len(name) <= 35 else name[:32] + "..."
+                doc_id, filename, uri, count = doc_info[0], doc_info[1], doc_info[2], doc_info[3]
+                
+                # Prefer title over filename, with fallback to filename
+                title = doc_info[4] if len(doc_info) >= 5 and doc_info[4] else None
+                display_name = title or filename
+                
+                # Smart truncation: truncate at word boundaries if possible
+                max_length = 40  # Maximum characters to display
+                if len(display_name) > max_length:
+                    # Try to truncate at word boundary
+                    truncated = display_name[:max_length]
+                    last_space = truncated.rfind(' ')
+                    if last_space > max_length * 0.7:  # If space is reasonably close to max
+                        display_name = truncated[:last_space] + "..."
+                    else:
+                        # Just truncate at max_length
+                        display_name = truncated + "..."
+                
                 st.sidebar.markdown(f"**{display_name}**")
                 st.sidebar.caption(f"{count} chunks")
     else:
@@ -1559,7 +1768,7 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
                 st.markdown(claim_html, unsafe_allow_html=True)
 
 
-def chat_ui(query_pipeline: QueryPipeline):
+def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
     """Main chat interface."""
     st.header("Research Assistant")
     
@@ -1623,8 +1832,44 @@ def chat_ui(query_pipeline: QueryPipeline):
                     display_answer_with_verification(answer_only, verification_results)
                     # Show references separately if they exist
                     if "**References:**" in content:
-                        references = content.split("**References:**", 1)[1].strip()
-                        st.markdown(f"\n\n**References:**\n{references}")
+                        # Extract and format references with titles
+                        refs_text = content.split("**References:**", 1)[1].strip()
+                        import re
+                        # Match s3:// URIs
+                        source_uris = re.findall(r's3://[^\s\n]+', refs_text)
+                        source_uris = [s.rstrip('-').strip().lstrip('0123456789. ').strip() for s in source_uris]
+                        source_uris = [s for s in source_uris if s.startswith('s3://')]
+                        
+                        if source_uris:
+                            st.markdown("\n\n**References:**")
+                            ingested_docs = st.session_state.get("ingested_docs", [])
+                            for source_uri in source_uris:
+                                # Find document info by source_uri
+                                doc_title = None
+                                for doc_info in ingested_docs:
+                                    if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                                        # Get title if available (position 4)
+                                        if len(doc_info) >= 5:
+                                            doc_title = doc_info[4]
+                                        break
+                                
+                                # Create display text with title only (authors only used for bibliography)
+                                if doc_title:
+                                    display_text = f"- **{doc_title}**"
+                                else:
+                                    # Fallback to filename if no title
+                                    for doc_info in ingested_docs:
+                                        if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                                            doc_filename = doc_info[1] if len(doc_info) >= 2 else None
+                                            display_text = f"- **{doc_filename or 'Document'}**"
+                                            break
+                                    else:
+                                        display_text = f"- **{source_uri.split('/')[-1] or 'Document'}**"
+                                
+                                st.markdown(display_text)
+                        else:
+                            # Fallback to original display
+                            st.markdown(f"\n\n**References:**\n{refs_text}")
                 else:
                     # No verification found, just display the content
                     if not trajectory_shown:
@@ -1642,7 +1887,7 @@ def chat_ui(query_pipeline: QueryPipeline):
                 # Place button inside the chat message, after content
                 button_key = f"add_report_{idx}"
                 # Use a stable key based on answer content hash
-                answer_hash = hash((answer_only, str(sources_final)))
+                answer_hash = hash((answer_only, str(sorted(sources_final))))
                 report_key = f"_report_item_{answer_hash}"
                 
                 # Check if answer is already in the report (check both flag and text)
@@ -1652,14 +1897,22 @@ def chat_ui(query_pipeline: QueryPipeline):
                 answer_snippet = answer_only[:100].strip() if len(answer_only) > 100 else answer_only.strip()
                 is_in_text = answer_snippet in report_text if answer_snippet else False
                 is_flagged = st.session_state.get(report_key, False)
+                
+                # If flag is set but answer is not in text, clear the flag (user deleted it)
+                if is_flagged and not is_in_text:
+                    st.session_state.pop(report_key, None)
+                    is_flagged = False
+                
                 is_already_added = is_in_text or is_flagged
                 
                 if is_already_added:
                     # Show disabled button if already added
                     st.button("Already in Report", key=f"report_status_{idx}", disabled=True, use_container_width=False)
                 else:
-                    # Show active button
-                    if st.button("Add to Report", key=button_key, use_container_width=False):
+                    # Show active button if not already added
+                    button_clicked = st.button("Add to Report", key=button_key, use_container_width=False)
+                    
+                    if button_clicked:
                         # Add to report immediately
                         add_to_report(answer_only, sources_final, query_text)
                         # Set flag to prevent duplicate additions
@@ -1725,17 +1978,47 @@ def chat_ui(query_pipeline: QueryPipeline):
             # Display answer with verification
             display_answer_with_verification(answer, verification_results)
             
-            # Append citations separately
+            # Append citations separately with titles only
             if sources:
-                citations = "\n\n**References:**\n" + "\n".join([f"- {s}" for s in sources])
-                st.markdown(citations)
+                # Display references with titles only (authors only used for bibliography)
+                st.markdown("\n\n**References:**")
+                refs_list = []
+                ingested_docs = st.session_state.get("ingested_docs", [])
+                
+                for source_uri in sources:
+                    # Find document info by source_uri
+                    doc_title = None
+                    for doc_info in ingested_docs:
+                        if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                            # Get title if available (position 4), fallback to filename
+                            if len(doc_info) >= 5:
+                                doc_title = doc_info[4]
+                            break
+                    
+                    # Create display text with title only
+                    if doc_title:
+                        display_text = f"- **{doc_title}**"
+                    else:
+                        # Fallback to filename if no title
+                        for doc_info in ingested_docs:
+                            if len(doc_info) >= 3 and doc_info[2] == source_uri:
+                                doc_filename = doc_info[1] if len(doc_info) >= 2 else None
+                                display_text = f"- **{doc_filename or 'Document'}**"
+                                break
+                        else:
+                            display_text = f"- **{source_uri.split('/')[-1] or 'Document'}**"
+                    
+                    st.markdown(display_text)
+                    refs_list.append(display_text)
+                
+                citations = "\n\n**References:**\n" + "\n".join(refs_list)
                 full_response = answer + citations
             else:
                 full_response = answer
             
             # Add "Add to Report" button inside chat message context
             # Use a stable key based on answer content hash
-            answer_hash = hash((answer, str(sources)))
+            answer_hash = hash((answer, str(sorted(sources))))
             report_key = f"_report_new_{answer_hash}"
             
             # Check if answer is already in the report (check both flag and text)
@@ -1745,14 +2028,22 @@ def chat_ui(query_pipeline: QueryPipeline):
             answer_snippet = answer[:100].strip() if len(answer) > 100 else answer.strip()
             is_in_text = answer_snippet in report_text if answer_snippet else False
             is_flagged = st.session_state.get(report_key, False)
+            
+            # If flag is set but answer is not in text, clear the flag (user deleted it)
+            if is_flagged and not is_in_text:
+                st.session_state.pop(report_key, None)
+                is_flagged = False
+            
             is_already_added = is_in_text or is_flagged
             
             if is_already_added:
                 # Show disabled button if already added
                 st.button("Already in Report", key="report_status_new", disabled=True, use_container_width=False)
             else:
-                # Show active button
-                if st.button("Add to Report", key="add_report_new", use_container_width=False):
+                # Show active button if not already added
+                button_clicked = st.button("Add to Report", key="add_report_new", use_container_width=False)
+                
+                if button_clicked:
                     # Add to report immediately
                     add_to_report(answer, sources, user_input)
                     # Set flag to prevent duplicate additions
@@ -1771,8 +2062,8 @@ def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryP
     # Upload section in main area (can be hidden)
     upload_section(ingestion)
     
-    # Chat interface
-    chat_ui(query_pipeline)
+    # Chat interface (pass ingestion for download functionality)
+    chat_ui(query_pipeline, ingestion)
 
 
 def research_report_page():
