@@ -11,69 +11,73 @@ def get_css_content():
     """Return CSS content - cached to avoid re-injecting on every rerun."""
     return r"""
         <style>
-        /* IBM Medical Research UI Color Palette */
+        /* MedCortex Color Palette */
         
         /* Light Mode Colors */
         :root {
-            --ibm-blue: #0f62fe;
-            --dark-slate: #394a59;
-            --verification-green: #24a148;
-            --light-gray: #f0f2f6;
-            --dark-gray: #161616;
-            --medium-gray: #525252;
+            --background: #FFFFFF;
+            --ui-panel: #F0F2F6;
+            --primary-text: #121212;
+            --secondary-text: #525252;
+            --verification-green: #22C55E;
+            --warning-orange: #F97316;
+            --user-error-red: #EF4444;
+            --info-blue: #3B82F6;
         }
         
         /* Dark Mode Colors */
         @media (prefers-color-scheme: dark) {
             :root {
-                --ibm-blue: #3d8bff;
-                --dark-slate: #6f7d8a;
-                --verification-green: #42be65;
-                --light-gray: #1a1a1a;
-                --dark-gray: #f4f4f4;
-                --medium-gray: #a8a8a8;
+                --background: #121212;
+                --ui-panel: #2b2b2b;
+                --primary-text: #FFFFFF;
+                --secondary-text: #AAAAAA;
+                --verification-green: #22C55E;
+                --warning-orange: #F97316;
+                --user-error-red: #EF4444;
+                --info-blue: #3B82F6;
             }
         }
         
         /* Override Streamlit default styles */
         .stApp {
-            background-color: var(--light-gray);
+            background-color: var(--background);
         }
         
         /* Main container */
         .main .block-container {
-            background-color: var(--light-gray);
+            background-color: var(--background);
             padding-top: 2rem;
             padding-bottom: 2rem;
         }
         
-        /* Title styling - VeriCite branding */
+        /* Title styling - MedCortex branding */
         h1 {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-weight: 700;
             font-size: 2.5rem;
             letter-spacing: -0.02em;
         }
         
-        /* VeriCite logo/title accent - removed icon for professional look */
+        /* MedCortex logo/title accent - removed icon for professional look */
         
         /* Caption/subtitle */
         .stMarkdown p {
-            color: var(--medium-gray);
+            color: var(--primary-text);
         }
         
         /* Sidebar */
         .css-1d391kg {
-            background-color: var(--dark-slate);
+            background-color: var(--ui-panel);
         }
         
         [data-testid="stSidebar"] {
-            background-color: var(--dark-slate);
+            background-color: var(--ui-panel);
         }
         
-        /* Sidebar title - VeriCite */
+        /* Sidebar title - MedCortex */
         [data-testid="stSidebar"] h1 {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             font-weight: 700;
             font-size: 1.75rem;
             letter-spacing: -0.01em;
@@ -82,40 +86,41 @@ def get_css_content():
         
         [data-testid="stSidebar"] .stMarkdown h2,
         [data-testid="stSidebar"] .stMarkdown h3 {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
         }
         
         [data-testid="stSidebar"] .stMarkdown,
         [data-testid="stSidebar"] p {
-            color: #e0e0e0 !important;
+            color: var(--secondary-text) !important;
         }
         
         /* Sidebar dividers */
         [data-testid="stSidebar"] hr {
-            border-color: rgba(255, 255, 255, 0.2) !important;
+            border-color: var(--secondary-text) !important;
+            opacity: 0.3 !important;
             margin: 1rem 0 !important;
         }
         
         /* Sidebar document items */
         [data-testid="stSidebar"] .stMarkdown strong {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             font-weight: 600;
         }
         
         [data-testid="stSidebar"] .stMarkdown .stCaption {
-            color: rgba(240, 240, 240, 0.8) !important;
+            color: var(--secondary-text) !important;
             font-size: 0.875rem;
         }
         
         /* Sidebar info box */
         [data-testid="stSidebar"] .stInfo {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-left: 3px solid var(--ibm-blue) !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            border-left: 3px solid var(--info-blue) !important;
         }
         
-        /* User chat message - IBM Blue */
+        /* User chat message - User/Error Red */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="user"]) [data-testid="stChatMessageContent"] {
-            background-color: var(--ibm-blue);
+            background-color: var(--user-error-red);
             color: #ffffff;
             border-radius: 12px 12px 0 12px;
             padding: 12px 16px;
@@ -125,15 +130,22 @@ def get_css_content():
             color: #ffffff !important;
         }
         
-        /* Assistant chat message - Dark Slate */
+        /* Assistant chat message - UI Panel */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] {
-            background-color: var(--dark-slate);
-            color: #f0f0f0 !important;
+            background-color: var(--ui-panel);
+            color: var(--primary-text) !important;
             border-radius: 12px 12px 12px 0;
             padding: 12px 16px;
         }
         
-        /* Ensure all text in assistant messages is soft white */
+        /* Ensure all text in assistant messages is primary text - comprehensive selector */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] * {
+            color: var(--primary-text) !important;
+        }
+        
+        /* Override markdown text colors within assistant messages */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] .stMarkdown,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] .stMarkdown *,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] p,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] div,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] span,
@@ -145,24 +157,30 @@ def get_css_content():
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h3,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h4,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h5,
-        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h6 {
-            color: #f0f0f0 !important;
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] h6,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] code,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] pre,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] blockquote,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] em,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] i,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] small {
+            color: var(--primary-text) !important;
         }
         
         /* Bold/strong text in assistant messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] strong,
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] b {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
         }
         
-        /* Links in assistant messages - soft white */
+        /* Links in assistant messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] a {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             text-decoration: underline !important;
         }
         
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] a:hover {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             opacity: 0.9 !important;
         }
         
@@ -174,9 +192,9 @@ def get_css_content():
         button[data-testid="baseButton-secondary"],
         button[data-testid="baseButton-primary"] {
             /* Cursor-style base appearance */
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            color: var(--dark-gray) !important;
-            border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            background-color: var(--ui-panel) !important;
+            color: var(--primary-text) !important;
+            border: 1px solid rgba(82, 82, 82, 0.3) !important;
             border-radius: 6px !important;
             padding: 0.375rem 0.75rem !important;
             font-size: 0.8125rem !important;
@@ -197,8 +215,9 @@ def get_css_content():
         .stDownloadButton > button:hover,
         button[data-testid="baseButton-secondary"]:hover,
         button[data-testid="baseButton-primary"]:hover {
-            background-color: rgba(255, 255, 255, 1) !important;
-            border-color: rgba(0, 0, 0, 0.2) !important;
+            background-color: var(--ui-panel) !important;
+            opacity: 0.9 !important;
+            border-color: var(--secondary-text) !important;
         }
         
         /* Active/pressed state - no special styling */
@@ -242,9 +261,9 @@ def get_css_content():
             .stDownloadButton > button,
             button[data-testid="baseButton-secondary"],
             button[data-testid="baseButton-primary"] {
-                background-color: rgba(255, 255, 255, 0.1) !important;
-                color: #f0f0f0 !important;
-                border-color: rgba(255, 255, 255, 0.2) !important;
+                background-color: var(--ui-panel) !important;
+                color: var(--primary-text) !important;
+                border-color: rgba(170, 170, 170, 0.3) !important;
             }
             
             .stButton > button:hover,
@@ -252,8 +271,9 @@ def get_css_content():
             .stDownloadButton > button:hover,
             button[data-testid="baseButton-secondary"]:hover,
             button[data-testid="baseButton-primary"]:hover {
-                background-color: rgba(255, 255, 255, 0.15) !important;
-                border-color: rgba(255, 255, 255, 0.3) !important;
+                background-color: var(--ui-panel) !important;
+                opacity: 0.9 !important;
+                border-color: var(--secondary-text) !important;
             }
             
             .stButton > button:active,
@@ -319,32 +339,54 @@ def get_css_content():
             padding-top: 0 !important;
         }
         
-        /* Navigation buttons in sidebar - high contrast for light mode */
+        /* Navigation buttons in sidebar */
         [data-testid="stSidebar"] .stButton > button,
         [data-testid="stSidebar"] button[data-testid="baseButton-secondary"] {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-            color: #f0f0f0 !important;
-            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            background-color: var(--ui-panel) !important;
+            color: var(--primary-text) !important;
+            border: 1px solid rgba(82, 82, 82, 0.3) !important;
             font-weight: 500 !important;
+        }
+        
+        /* Ensure button text elements use primary color */
+        [data-testid="stSidebar"] .stButton > button *,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"] *,
+        [data-testid="stSidebar"] .stButton > button span,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"] span,
+        [data-testid="stSidebar"] .stButton > button p,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"] p {
+            color: var(--primary-text) !important;
         }
         
         [data-testid="stSidebar"] .stButton > button:hover,
         [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover {
-            background-color: rgba(255, 255, 255, 0.25) !important;
-            border-color: rgba(255, 255, 255, 0.4) !important;
-            color: #ffffff !important;
+            background-color: var(--ui-panel) !important;
+            opacity: 0.9 !important;
+            border-color: var(--secondary-text) !important;
+            color: var(--primary-text) !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:hover *,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover * {
+            color: var(--primary-text) !important;
         }
         
         [data-testid="stSidebar"] .stButton > button:disabled,
         [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:disabled {
-            background-color: rgba(255, 255, 255, 0.08) !important;
-            color: rgba(240, 240, 240, 0.5) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
+            background-color: var(--ui-panel) !important;
+            opacity: 0.5 !important;
+            color: var(--secondary-text) !important;
+            border-color: rgba(82, 82, 82, 0.2) !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:disabled *,
+        [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:disabled * {
+            color: var(--secondary-text) !important;
         }
         
         /* Headers with dividers - compact */
         h2 {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-weight: 700 !important;
             margin-top: 1rem !important;
             margin-bottom: 0.75rem !important;
@@ -353,22 +395,22 @@ def get_css_content():
         
         /* Horizontal dividers - compact */
         hr {
-            border-color: var(--ibm-blue) !important;
+            border-color: var(--info-blue) !important;
             border-width: 2px !important;
             margin: 1rem 0 !important;
         }
         
         /* Info messages */
         .stInfo {
-            background-color: rgba(15, 98, 254, 0.1) !important;
-            border-left: 4px solid var(--ibm-blue) !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            border-left: 4px solid var(--info-blue) !important;
             padding: 1rem !important;
             border-radius: 6px !important;
         }
         
         /* Status update text with pulsing animation */
         .status-update-text {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-size: 0.95rem !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -382,9 +424,9 @@ def get_css_content():
             padding: 0 !important;
         }
         
-        /* Align status container with chat message avatar - assistant messages soft white */
+        /* Align status container with chat message avatar - assistant messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] .status-update-text {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             display: block !important;
             line-height: 1.5 !important;
         }
@@ -429,7 +471,7 @@ def get_css_content():
             margin: 0 !important;
             font-weight: 400 !important;
             font-size: 0.95rem !important;
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             cursor: pointer !important;
             transition: all 0.2s ease !important;
             border-radius: 8px !important;
@@ -438,9 +480,9 @@ def get_css_content():
             list-style: none !important;
         }
         
-        /* Expander in assistant chat messages - soft white text */
+        /* Expander in assistant chat messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
         }
         
         /* Curved hover effect - subtle background with rounded corners */
@@ -491,9 +533,9 @@ def get_css_content():
         
         /* File uploader - Compact styling */
         [data-testid="stFileUploader"] {
-            border: 2px dashed var(--ibm-blue) !important;
+            border: 2px dashed var(--info-blue) !important;
             border-radius: 8px !important;
-            background: rgba(15, 98, 254, 0.03) !important;
+            background: rgba(59, 130, 246, 0.03) !important;
             padding: 1rem !important;
             transition: all 0.2s ease !important;
             min-height: 60px !important;
@@ -501,14 +543,14 @@ def get_css_content():
         }
         
         [data-testid="stFileUploader"]:hover {
-            border-color: var(--ibm-blue) !important;
-            background: rgba(15, 98, 254, 0.05) !important;
-            box-shadow: 0 2px 8px rgba(15, 98, 254, 0.1) !important;
+            border-color: var(--info-blue) !important;
+            background: rgba(59, 130, 246, 0.05) !important;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1) !important;
         }
         
         /* Selected files preview */
         h3 {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-weight: 600 !important;
             font-size: 1.2rem !important;
             margin-top: 1.5rem !important;
@@ -517,7 +559,7 @@ def get_css_content():
         
         /* File uploader label - compact */
         [data-testid="stFileUploader"] label {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-weight: 500 !important;
             font-size: 0.95rem !important;
             margin-bottom: 0.5rem !important;
@@ -525,8 +567,8 @@ def get_css_content():
         
         /* File name container - simple, clean styling */
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] {
-            background-color: #ffffff !important;
-            border: 1px solid var(--medium-gray) !important;
+            background-color: var(--ui-panel) !important;
+            border: 1px solid rgba(82, 82, 82, 0.3) !important;
             border-radius: 6px !important;
             padding: 0.5rem 0.75rem !important;
             margin: 0.5rem 0 !important;
@@ -539,15 +581,16 @@ def get_css_content():
         }
         
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"]:hover {
-            background-color: #f8f9fa !important;
-            border-color: var(--ibm-blue) !important;
+            background-color: var(--ui-panel) !important;
+            opacity: 0.9 !important;
+            border-color: var(--info-blue) !important;
         }
         
         /* File name text - simple */
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] > *:first-child,
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] span:first-of-type,
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] div:first-of-type {
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             font-weight: 400 !important;
             font-size: 0.875rem !important;
             white-space: nowrap !important;
@@ -566,7 +609,7 @@ def get_css_content():
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] > [data-testid="stFileUploaderFileSize"],
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] span:last-child,
         [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] div:last-child:not(:first-child) {
-            color: var(--medium-gray) !important;
+            color: var(--secondary-text) !important;
             font-size: 0.8rem !important;
             font-weight: 400 !important;
             margin-left: auto !important;
@@ -575,11 +618,11 @@ def get_css_content():
             flex-shrink: 0 !important;
         }
         
-        /* File uploader browse button - IBM blue instead of red */
+        /* File uploader browse button */
         [data-testid="stFileUploader"] button {
             background-color: transparent !important;
             border: none !important;
-            color: var(--ibm-blue) !important;
+            color: var(--info-blue) !important;
             font-size: 1rem !important;
             padding: 0.25rem 0.5rem !important;
             cursor: pointer !important;
@@ -588,8 +631,8 @@ def get_css_content():
         }
         
         [data-testid="stFileUploader"] button:hover {
-            background-color: rgba(15, 98, 254, 0.1) !important;
-            color: var(--ibm-blue) !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            color: var(--info-blue) !important;
         }
         
         /* Success messages */
@@ -600,24 +643,24 @@ def get_css_content():
         
         /* Input field */
         .stTextInput > div > div > input {
-            border-color: var(--medium-gray);
+            border-color: rgba(82, 82, 82, 0.3);
         }
         
         .stTextInput > div > div > input:focus {
-            border-color: var(--ibm-blue);
-            box-shadow: 0 0 0 2px rgba(15, 98, 254, 0.1);
+            border-color: var(--info-blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
         
         /* Textarea styling - Cursor-style minimal design */
         .stTextArea > div > div > textarea {
-            background-color: #ffffff !important;
-            border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            background-color: var(--ui-panel) !important;
+            border: 1px solid rgba(82, 82, 82, 0.3) !important;
             border-radius: 6px !important;
             padding: 0.75rem 0.875rem !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
             font-size: 0.875rem !important;
             line-height: 1.6 !important;
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
             box-shadow: none !important;
             transition: all 0.15s ease !important;
             resize: vertical !important;
@@ -625,13 +668,13 @@ def get_css_content():
         }
         
         .stTextArea > div > div > textarea:focus {
-            border-color: var(--ibm-blue) !important;
+            border-color: var(--info-blue) !important;
             box-shadow: none !important;
             outline: none !important;
             outline-width: 0 !important;
             outline-style: none !important;
             outline-color: transparent !important;
-            background-color: #ffffff !important;
+            background-color: var(--ui-panel) !important;
         }
         
         .stTextArea > div > div > textarea:focus-visible {
@@ -642,7 +685,7 @@ def get_css_content():
         }
         
         .stTextArea > div > div > textarea:hover {
-            border-color: rgba(0, 0, 0, 0.2) !important;
+            border-color: rgba(82, 82, 82, 0.5) !important;
         }
         
         /* Textarea container */
@@ -652,19 +695,19 @@ def get_css_content():
         
         /* Chat input */
         .stChatInputContainer {
-            background-color: #ffffff;
-            border-top: 1px solid var(--medium-gray);
+            background-color: var(--ui-panel);
+            border-top: 1px solid rgba(82, 82, 82, 0.3);
         }
         
         /* Citations/References - in main markdown */
         .stMarkdown strong {
-            color: var(--dark-gray);
+            color: var(--primary-text);
         }
         
-        /* References heading in assistant messages - keep soft white, not green */
+        /* References heading in assistant messages */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) 
         [data-testid="stChatMessageContent"] strong {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
         }
         
         /* Verification badges - pill-shaped indicators */
@@ -687,18 +730,26 @@ def get_css_content():
             white-space: nowrap;
         }
         .verification-badge.verified {
-            background-color: #24a148;
+            background-color: var(--verification-green);
             color: white;
         }
         .verification-badge.unverified {
-            background-color: #ff832b;
+            background-color: var(--warning-orange);
             color: white;
             position: relative;
             cursor: help;
         }
         .verification-badge.refuted {
-            background-color: #da1e28;
+            background-color: var(--user-error-red);
             color: white;
+        }
+        
+        /* Force all text in assistant messages to use primary text color - override any other styles */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] p,
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] span:not(.verification-badge),
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] div:not(.verification-badge),
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] *:not(.verification-badge):not(.verification-badge *) {
+            color: var(--primary-text) !important;
         }
         
         /* Tooltip for unverified/extrapolated badges */
@@ -710,8 +761,8 @@ def get_css_content():
             transform: translateX(-50%);
             margin-bottom: 8px;
             padding: 0.75rem 1rem;
-            background-color: var(--dark-gray);
-            color: #ffffff;
+            background-color: var(--primary-text);
+            color: var(--background);
             font-size: 0.875rem;
             font-weight: 400;
             white-space: normal;
@@ -733,7 +784,7 @@ def get_css_content():
             left: 50%;
             transform: translateX(-50%);
             border: 6px solid transparent;
-            border-top-color: var(--dark-gray);
+            border-top-color: var(--primary-text);
             z-index: 1001;
             pointer-events: none;
         }
@@ -743,42 +794,20 @@ def get_css_content():
             margin-left: 0 !important;
         }
         
-        /* Dark mode support for badges */
-        @media (prefers-color-scheme: dark) {
-            .verification-badge.verified {
-                background-color: #42be65;
-            }
-            .verification-badge.unverified {
-                background-color: #ff832b;
-            }
-            .verification-badge.refuted {
-                background-color: #fa4d56;
-            }
-            
-            /* Dark mode tooltip - use light background */
-            .verification-badge.unverified:hover::after {
-                background-color: #2a2a2a;
-                color: #f0f0f0;
-            }
-            
-            .verification-badge.unverified:hover::before {
-                border-top-color: #2a2a2a;
-            }
-        }
-        
         /* Links in citations */
         .stMarkdown a {
-            color: var(--ibm-blue);
+            color: var(--info-blue);
         }
         
         .stMarkdown a:hover {
-            color: #0050e6;
+            color: var(--info-blue);
+            opacity: 0.8;
         }
         
         /* Reference list items - simple, clean styling */
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) 
         [data-testid="stChatMessageContent"] ul {
-            border-left: 2px solid rgba(255, 255, 255, 0.3);
+            border-left: 2px solid rgba(82, 82, 82, 0.3);
             padding-left: 16px;
         }
         
@@ -789,77 +818,77 @@ def get_css_content():
         
         [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) 
         [data-testid="stChatMessageContent"] li {
-            color: #f0f0f0 !important;
+            color: var(--primary-text) !important;
             margin-bottom: 0.25rem;
         }
         
         /* Spinner */
         .stSpinner > div {
-            border-color: var(--ibm-blue);
+            border-color: var(--info-blue);
         }
         
         /* Dark mode specific overrides */
         @media (prefers-color-scheme: dark) {
             .stApp {
-                background-color: var(--light-gray);
+                background-color: var(--background);
             }
             
             .main .block-container {
-                background-color: var(--light-gray);
+                background-color: var(--background);
             }
             
             h1 {
-                color: var(--dark-gray) !important;
+                color: var(--primary-text) !important;
             }
             
             .stMarkdown p {
-                color: var(--dark-gray);
+                color: var(--primary-text);
             }
             
             [data-testid="stSidebar"] {
-                background-color: #2d3a47;
+                background-color: var(--ui-panel);
             }
             
             h2 {
-                color: var(--dark-gray) !important;
+                color: var(--primary-text) !important;
             }
             
             .stInfo {
-                background-color: rgba(61, 139, 255, 0.15) !important;
-                border-left-color: var(--ibm-blue) !important;
+                background-color: rgba(59, 130, 246, 0.15) !important;
+                border-left-color: var(--info-blue) !important;
             }
             
             [data-testid="stFileUploader"] {
-                background-color: #2a2a2a;
-                border-color: var(--medium-gray);
+                background-color: var(--ui-panel);
+                border-color: var(--secondary-text);
             }
             
             .drag-drop-overlay {
-                background: rgba(61, 139, 255, 0.15);
-                border-color: var(--ibm-blue);
+                background: rgba(59, 130, 246, 0.15);
+                border-color: var(--info-blue);
             }
             
             .drag-drop-overlay-content {
-                background: #2a2a2a;
-                border-color: var(--ibm-blue);
+                background: var(--ui-panel);
+                border-color: var(--info-blue);
             }
             
             .drag-drop-overlay-content h2 {
-                color: var(--ibm-blue);
+                color: var(--info-blue);
             }
             
             .drag-drop-overlay-content p {
-                color: var(--medium-gray);
+                color: var(--secondary-text);
             }
             
             /* Status text - dark mode */
             .status-update-text {
-                color: var(--dark-gray) !important;
+                color: var(--primary-text) !important;
             }
             
             /* Expander - dark mode */
             [data-testid="stExpander"] summary {
-                color: var(--dark-gray) !important;
+                color: var(--primary-text) !important;
             }
             
             [data-testid="stExpander"] summary:hover {
@@ -868,65 +897,66 @@ def get_css_content():
             
             [data-testid="stExpander"] [data-testid="stExpanderContent"] {
                 background: rgba(255, 255, 255, 0.03) !important;
-                border-left: 2px solid rgba(255, 255, 255, 0.15) !important;
+                border-left: 2px solid rgba(170, 170, 170, 0.3) !important;
             }
             
             [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
                 background: rgba(255, 255, 255, 0.05) !important;
-                border-left: 2px solid rgba(255, 255, 255, 0.2) !important;
+                border-left: 2px solid rgba(170, 170, 170, 0.5) !important;
             }
             
-            /* Expander in assistant messages still uses soft white text in dark mode */
+            /* Expander in assistant messages */
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary {
-                color: #f0f0f0 !important;
+                color: var(--primary-text) !important;
             }
             
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] summary:hover {
-                background: rgba(240, 240, 240, 0.1) !important;
+                background: rgba(255, 255, 255, 0.1) !important;
             }
             
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"] [data-testid="stExpanderContent"] {
-                background: rgba(240, 240, 240, 0.05) !important;
-                border-left: 2px solid rgba(240, 240, 240, 0.2) !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+                border-left: 2px solid rgba(170, 170, 170, 0.3) !important;
             }
             
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stExpander"][open] [data-testid="stExpanderContent"] {
-                background: rgba(240, 240, 240, 0.08) !important;
-                border-left: 2px solid rgba(240, 240, 240, 0.3) !important;
+                background: rgba(255, 255, 255, 0.08) !important;
+                border-left: 2px solid rgba(170, 170, 170, 0.5) !important;
             }
             
             [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] {
-                background-color: #1a1a1a !important;
-                border-color: var(--ibm-blue) !important;
+                background-color: var(--ui-panel) !important;
+                border-color: rgba(170, 170, 170, 0.3) !important;
             }
             
             [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"]:hover {
-                background-color: #2a2a2a !important;
-                border-color: var(--ibm-blue) !important;
+                background-color: var(--ui-panel) !important;
+                opacity: 0.9 !important;
+                border-color: var(--info-blue) !important;
             }
             
             [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] span,
             [data-testid="stFileUploader"] [data-testid="stFileUploaderFileName"] div {
-                color: var(--dark-gray) !important;
+                color: var(--primary-text) !important;
             }
             
             /* Textarea dark mode styling - Cursor-style */
             .stTextArea > div > div > textarea {
-                background-color: #1a1a1a !important;
-                border: 1px solid rgba(255, 255, 255, 0.2) !important;
-                color: #f0f0f0 !important;
+                background-color: var(--ui-panel) !important;
+                border: 1px solid rgba(170, 170, 170, 0.3) !important;
+                color: var(--primary-text) !important;
                 box-shadow: none !important;
                 outline: none !important;
             }
             
             .stTextArea > div > div > textarea:focus {
-                border-color: var(--ibm-blue) !important;
+                border-color: var(--info-blue) !important;
                 box-shadow: none !important;
                 outline: none !important;
                 outline-width: 0 !important;
                 outline-style: none !important;
                 outline-color: transparent !important;
-                background-color: #1a1a1a !important;
+                background-color: var(--ui-panel) !important;
             }
             
             .stTextArea > div > div > textarea:focus-visible {
@@ -937,21 +967,22 @@ def get_css_content():
             }
             
             .stTextArea > div > div > textarea:hover {
-                border-color: rgba(255, 255, 255, 0.3) !important;
+                border-color: rgba(170, 170, 170, 0.5) !important;
             }
             
             .stChatInputContainer {
-                background-color: #2a2a2a;
-                border-top: 1px solid var(--medium-gray);
+                background-color: var(--ui-panel);
+                border-top: 1px solid rgba(170, 170, 170, 0.3);
             }
             
             /* Dark mode chat messages */
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="user"]) [data-testid="stChatMessageContent"] {
-                background-color: var(--ibm-blue);
+                background-color: var(--user-error-red);
             }
             
             [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatar"] [data-icon="assistant"]) [data-testid="stChatMessageContent"] {
-                background-color: #4a5a6a;
+                background-color: var(--ui-panel);
+                color: var(--primary-text) !important;
             }
         }
 
@@ -985,7 +1016,7 @@ def get_css_content():
             height: 20px !important;
             fill: currentColor !important;
             stroke: currentColor !important;
-            color: var(--dark-gray) !important;
+            color: var(--primary-text) !important;
         }
         
         /* Hide text/aria-label and show icon */
@@ -1383,7 +1414,7 @@ def export_report(format: str = "docx") -> bytes:
             doc = Document()
             
             # Title
-            doc.add_heading('Research Report', 0)
+            doc.add_heading('Synthesis Studio', 0)
             doc.add_paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y')}")
             doc.add_paragraph("")  # Blank line
             
@@ -1455,8 +1486,8 @@ def report_page():
     """Display and manage the research report page."""
     from datetime import datetime
     
-    st.header("Research Report")
-    st.caption("Curate your verified findings into a formatted research report")
+    st.header("Synthesis Studio")
+    st.caption("Build your final deliverable from verified insights")
     
     # Export buttons at the top
     try:
@@ -1496,15 +1527,15 @@ def report_page():
     
     # Report text area (editable)
     if not st.session_state.get("report_text", ""):
-        st.info("Your report is empty. Add verified findings from the Research Assistant page to build your report.")
+        st.info("Your report is empty. Add verified findings from the MedCortex Analyst page to build your report.")
         st.session_state["report_text"] = ""
     
     # Editable text area
     report_content = st.text_area(
-        "Report Content",
+        "Synthesis Content",
         value=st.session_state.get("report_text", ""),
         height=500,
-        help="Edit your report here. Content added via 'Add to Report' buttons will appear here.",
+        help="Edit your synthesis here. Content added via 'Add to Studio' buttons will appear here.",
         label_visibility="collapsed"
     )
     
@@ -1770,7 +1801,7 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
 
 def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
     """Main chat interface."""
-    st.header("Research Assistant")
+    st.header("MedCortex Analyst")
     
     if not st.session_state["ingested_docs"]:
         st.info("Upload documents above to start asking questions about your research materials.")
@@ -1907,10 +1938,10 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
                 
                 if is_already_added:
                     # Show disabled button if already added
-                    st.button("Already in Report", key=f"report_status_{idx}", disabled=True, use_container_width=False)
+                    st.button("Already in Synthesis Studio", key=f"report_status_{idx}", disabled=True, use_container_width=False)
                 else:
                     # Show active button if not already added
-                    button_clicked = st.button("Add to Report", key=button_key, use_container_width=False)
+                    button_clicked = st.button("Add to Synthesis Studio", key=button_key, use_container_width=False)
                     
                     if button_clicked:
                         # Add to report immediately
@@ -2038,10 +2069,10 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
             
             if is_already_added:
                 # Show disabled button if already added
-                st.button("Already in Report", key="report_status_new", disabled=True, use_container_width=False)
+                st.button("Already in Synthesis Studio", key="report_status_new", disabled=True, use_container_width=False)
             else:
                 # Show active button if not already added
-                button_clicked = st.button("Add to Report", key="add_report_new", use_container_width=False)
+                button_clicked = st.button("Add to Synthesis Studio", key="add_report_new", use_container_width=False)
                 
                 if button_clicked:
                     # Add to report immediately
@@ -2056,8 +2087,8 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
 
 def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryPipeline):
     """Research Assistant page - separate route."""
-    st.title("VeriCite")
-    st.caption("Research Assistant • Powered by watsonx.ai • Hybrid Search • Granite-3-8B-Instruct")
+    st.title("MedCortex")
+    st.caption("AI Research Analyst • Verifiable Synthesis • Powered by watsonx.ai")
     
     # Upload section in main area (can be hidden)
     upload_section(ingestion)
@@ -2068,8 +2099,8 @@ def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryP
 
 def research_report_page():
     """Research Report page - separate route."""
-    st.title("VeriCite")
-    st.caption("Research Report • Curate and Export Your Findings")
+    st.title("MedCortex")
+    st.caption("Synthesis Studio • Your workspace for curating evidence-based analysis")
     
     report_page()
 
@@ -2088,9 +2119,9 @@ def get_pipelines(settings):
 
 
 def main():
-    # Set page config for VeriCite branding
+    # Set page config for MedCortex branding
     st.set_page_config(
-        page_title="VeriCite - Research Assistant",
+        page_title="MedCortex | Analysis Workspace",
         page_icon=None,
         layout="wide",
         initial_sidebar_state="expanded"
@@ -2130,8 +2161,8 @@ def main():
     
     # Navigation links - optimized to reduce reruns
     # Disable navigation during generation to prevent interruption
-    nav_assistant = st.sidebar.button("Research Assistant", key="nav_assistant", use_container_width=False, type="secondary", disabled=is_generating)
-    nav_report = st.sidebar.button("Research Report", key="nav_report", use_container_width=False, type="secondary", disabled=is_generating)
+    nav_assistant = st.sidebar.button("MedCortex Analyst", key="nav_assistant", use_container_width=True, type="secondary", disabled=is_generating)
+    nav_report = st.sidebar.button("Synthesis Studio", key="nav_report", use_container_width=True, type="secondary", disabled=is_generating)
     
     if is_generating:
         st.sidebar.caption("⚠️ Answer generation in progress...")

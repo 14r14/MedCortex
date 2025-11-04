@@ -1,6 +1,6 @@
-# VeriCite: The AI Medical Research Assistant
+# MedCortex: The AI Medical Research Assistant
 
-VeriCite is a production-ready, enterprise-grade AI assistant designed to help medical and clinical researchers synthesize vast amounts of scientific literature.   
+MedCortex is a production-ready, enterprise-grade AI assistant designed to help medical and clinical researchers synthesize vast amounts of scientific literature.   
 
 Researchers are often overwhelmed by the volume of new papers, making it difficult to find and synthesize relevant information. This Retrieval-Augmented Generation (RAG) agent  solves this by ingesting a library of PDF documents and providing accurate, synthesized answers grounded in verifiable, citable sources.   
 
@@ -50,7 +50,7 @@ For setup and running instructions, see [SETUP.md](SETUP.md).
 
 ### System Architecture Overview
 
-VeriCite implements a sophisticated multi-stage RAG (Retrieval-Augmented Generation) pipeline with an agentic iterative framework, hybrid search capabilities, and post-generation verification. The system processes queries through two primary pathways:
+MedCortex implements a sophisticated multi-stage RAG (Retrieval-Augmented Generation) pipeline with an agentic iterative framework, hybrid search capabilities, and post-generation verification. The system processes queries through two primary pathways:
 
 1. **Simple Query Path**: Direct RAG pipeline with hybrid search, reranking, and answer generation
 2. **Complex Query Path**: Iterative agentic framework (i-MedRAG inspired) with query decomposition, multi-hop retrieval, and synthesis
@@ -410,4 +410,4 @@ All data storage is **session-based** using Streamlit session state, ensuring co
 6. **Table Extraction Failures**: Graceful degradation (skips table extraction if camelot fails)
 7. **API Failures**: Retry logic via `tenacity` library
 
-This technical architecture ensures VeriCite provides accurate, verifiable, and comprehensive answers to medical research queries while maintaining high performance and reliability.
+This technical architecture ensures MedCortex provides accurate, verifiable, and comprehensive answers to medical research queries while maintaining high performance and reliability.
