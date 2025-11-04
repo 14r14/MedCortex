@@ -1,7 +1,13 @@
+"""RAG pipeline for document ingestion and query processing.
+
+This module provides the IngestionPipeline and QueryPipeline classes
+for document processing and query answering.
+"""
+
 import io
-import uuid
 import logging
-from typing import List, Tuple, Optional, Dict
+import uuid
+from typing import Dict, List, Optional, Tuple
 
 from ibm_watsonx_ai.wml_client_error import ApiRequestFailure
 
@@ -28,7 +34,18 @@ logger = logging.getLogger(__name__)
 
 
 class IngestionPipeline:
-    def __init__(self, settings: Settings):
+    """Pipeline for ingesting and indexing documents.
+
+    Handles document upload, text extraction, chunking, embedding,
+    and storage in vector and keyword search indices.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        """Initialize ingestion pipeline.
+
+        Args:
+            settings: Application settings.
+        """
         self.settings = settings
         self.cos = COSClient(settings)
         self.embed = EmbeddingClient(settings)
@@ -36,12 +53,34 @@ class IngestionPipeline:
         # Initialize BM25 store - shares session state with FAISS
         self.bm25 = BM25Store(session_key="faiss_store")
 
-    def upload_to_cos(self, doc_id: str, filename: str, file_obj) -> str:
+    def upload_to_cos(
+        self, doc_id: str, filename: str, file_obj
+    ) -> str:
+        """Upload a file to Cloud Object Storage.
+
+        Args:
+            doc_id: Document identifier.
+            filename: Name of the file.
+            file_obj: File object to upload.
+
+        Returns:
+            S3 URI of the uploaded file.
+        """
         key = f"docs/{doc_id}/{filename}"
         return self.cos.upload_fileobj(key, file_obj)
 
-    def _split_oversized_chunk(self, chunk: str, max_chars: int = 500) -> List[str]:
-        """Split a chunk that's too long into smaller chunks at word boundaries."""
+    def _split_oversized_chunk(
+        self, chunk: str, max_chars: int = 500
+    ) -> List[str]:
+        """Split a chunk that's too long into smaller chunks at word boundaries.
+
+        Args:
+            chunk: Chunk text to split.
+            max_chars: Maximum characters per chunk.
+
+        Returns:
+            List of split chunks.
+        """
         if len(chunk) <= max_chars:
             return [chunk]
         
@@ -74,8 +113,18 @@ class IngestionPipeline:
         
         return result
     
-    def _ensure_chunks_are_safe(self, chunks: List[str], max_chars: int = 500) -> List[str]:
-        """Ensure all chunks are within the safe character limit."""
+    def _ensure_chunks_are_safe(
+        self, chunks: List[str], max_chars: int = 500
+    ) -> List[str]:
+        """Ensure all chunks are within the safe character limit.
+
+        Args:
+            chunks: List of chunks to validate.
+            max_chars: Maximum characters per chunk.
+
+        Returns:
+            List of safe chunks (split if necessary).
+        """
         safe_chunks: List[str] = []
         for chunk in chunks:
             if len(chunk) <= max_chars:
@@ -86,11 +135,18 @@ class IngestionPipeline:
                 safe_chunks.extend(split_chunks)
         return safe_chunks
     
-    def _embed_with_retry(self, chunks: List[str], max_retries: int = 2) -> Tuple[List[List[float]], List[str]]:
+    def _embed_with_retry(
+        self, chunks: List[str], max_retries: int = 2
+    ) -> Tuple[List[List[float]], List[str]]:
         """Embed chunks with automatic retry and re-chunking on token limit errors.
-        
+
+        Args:
+            chunks: List of text chunks to embed.
+            max_retries: Maximum number of retry attempts.
+
         Returns:
-            Tuple of (embeddings, safe_chunks) - the chunks that were successfully embedded
+            Tuple of (embeddings, safe_chunks) - the chunks that were
+            successfully embedded.
         """
         # Conservative estimate: ~2.5 chars/token, so 256 tokens = ~640 chars max
         # Use 500 chars to be extra safe and account for special tokens
@@ -144,7 +200,20 @@ class IngestionPipeline:
         
         return [], []
     
-    def ingest_pdf(self, doc_id: str, filename: str, source_uri: str) -> Tuple[int, Dict[str, Optional[str]]]:
+    def ingest_pdf(
+        self, doc_id: str, filename: str, source_uri: str
+    ) -> Tuple[int, Dict[str, Optional[str]]]:
+        """Ingest a PDF document into the knowledge base.
+
+        Args:
+            doc_id: Document identifier.
+            filename: Name of the PDF file.
+            source_uri: S3 URI of the source document.
+
+        Returns:
+            Tuple of (upserted_count, metadata_dict) where metadata_dict
+            contains title and author if available.
+        """
         file_stream = self._fetch_cos_stream(source_uri)
         
         # Extract metadata (title, author) - need to read file first
@@ -203,6 +272,14 @@ class IngestionPipeline:
         return upserted, metadata
 
     def _fetch_cos_stream(self, s3_url: str) -> io.BytesIO:
+        """Fetch a file from Cloud Object Storage as a stream.
+
+        Args:
+            s3_url: S3 URI of the file (format: s3://bucket/key).
+
+        Returns:
+            BytesIO stream containing the file content.
+        """
         # s3://bucket/key
         assert s3_url.startswith("s3://")
         _, rest = s3_url.split("s3://", 1)
@@ -213,7 +290,18 @@ class IngestionPipeline:
 
 
 class QueryPipeline:
-    def __init__(self, settings: Settings):
+    """Pipeline for processing queries and generating answers.
+
+    Handles query embedding, retrieval (semantic and keyword),
+    reranking, context compression, generation, and verification.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        """Initialize query pipeline.
+
+        Args:
+            settings: Application settings.
+        """
         self.settings = settings
         self.embed = EmbeddingClient(settings)
         self.vs = FaissStore(settings, session_key="faiss_store")
@@ -224,8 +312,22 @@ class QueryPipeline:
         # Orchestrator will be initialized lazily to avoid circular dependency
         self._orchestrator = None
 
-    def _reciprocal_rank_fusion(self, semantic_hits: List[dict], keyword_hits: List[dict], k: int = 60) -> List[dict]:
-        """Combine semantic and keyword search results using Reciprocal Rank Fusion (RRF)."""
+    def _reciprocal_rank_fusion(
+        self,
+        semantic_hits: List[dict],
+        keyword_hits: List[dict],
+        k: int = 60,
+    ) -> List[dict]:
+        """Combine semantic and keyword search results using Reciprocal Rank Fusion (RRF).
+
+        Args:
+            semantic_hits: Results from semantic (vector) search.
+            keyword_hits: Results from keyword (BM25) search.
+            k: RRF parameter (default: 60).
+
+        Returns:
+            Combined and ranked results.
+        """
         # Map chunk IDs to their hits and RRF scores
         hit_map = {}  # chunk_id -> hit
         rrf_scores = {}  # chunk_id -> RRF score
@@ -255,13 +357,19 @@ class QueryPipeline:
         return fused_hits
 
     def _is_complex_query(self, question: str) -> bool:
-        """
-        Detect if a query is complex enough to require iterative reasoning.
-        
+        """Detect if a query is complex enough to require iterative reasoning.
+
         Complex queries typically:
         - Ask multiple related questions (e.g., "What is X and what are its Y?")
         - Reference multiple documents/contexts
-        - Require multi-hop reasoning (e.g., "What is the standard treatment for condition A as described in paper B?")
+        - Require multi-hop reasoning (e.g., "What is the standard treatment
+          for condition A as described in paper B?")
+
+        Args:
+            question: User question to analyze.
+
+        Returns:
+            True if query is complex, False otherwise.
         """
         # Keywords that suggest complexity
         complexity_indicators = [
@@ -292,17 +400,24 @@ class QueryPipeline:
         
         return is_complex
     
-    def answer(self, question: str, allowed_doc_ids: Optional[List[str]] = None, 
-               use_orchestrator: Optional[bool] = None) -> tuple[str, List[str]]:
-        """
-        Answer question with optional filtering by document IDs (session-based).
-        
+    def answer(
+        self,
+        question: str,
+        allowed_doc_ids: Optional[List[str]] = None,
+        use_orchestrator: Optional[bool] = None,
+    ) -> Tuple[str, List[str]]:
+        """Answer question with optional filtering by document IDs (session-based).
+
         Uses orchestrator for complex queries, standard RAG for simple queries.
-        
+
         Args:
-            question: User question
-            allowed_doc_ids: Optional list of allowed document IDs
-            use_orchestrator: Optional override flag. If None, auto-detect. If False, skip orchestrator.
+            question: User question.
+            allowed_doc_ids: Optional list of allowed document IDs.
+            use_orchestrator: Optional override flag. If None, auto-detect.
+                If False, skip orchestrator.
+
+        Returns:
+            Tuple of (answer, sources).
         """
         # Detect if query is complex (unless explicitly disabled)
         if use_orchestrator is None:

@@ -1,14 +1,30 @@
+"""Main Streamlit application for MedCortex AI Research Analyst.
+
+This module provides the user interface for the MedCortex application,
+including document upload, query processing, and report generation.
+"""
+
+import base64
+import hashlib
+import re
 import uuid
-from dotenv import load_dotenv
+from datetime import datetime
+from typing import List, Optional, Tuple
+
 import streamlit as st
+from dotenv import load_dotenv
 
 from app.config import Settings
 from app.rag.pipeline import IngestionPipeline, QueryPipeline
 
 
 @st.cache_resource
-def get_css_content():
-    """Return CSS content - cached to avoid re-injecting on every rerun."""
+def get_css_content() -> str:
+    """Return CSS content for MedCortex UI styling.
+
+    Returns:
+        CSS content as a string. Cached to avoid re-injecting on every rerun.
+    """
     return r"""
         <style>
         /* MedCortex Color Palette */
@@ -358,6 +374,7 @@ def get_css_content():
             color: var(--primary-text) !important;
         }
         
+        
         [data-testid="stSidebar"] .stButton > button:hover,
         [data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover {
             background-color: var(--ui-panel) !important;
@@ -698,7 +715,6 @@ def get_css_content():
             background-color: var(--ui-panel);
             border-top: 1px solid rgba(82, 82, 82, 0.3);
         }
-        
         /* Citations/References - in main markdown */
         .stMarkdown strong {
             color: var(--primary-text);
@@ -1038,8 +1054,11 @@ def get_css_content():
         """
 
 
-def inject_custom_css():
-    """Inject custom CSS for medical research UI with IBM brand colors - optimized with caching."""
+def inject_custom_css() -> None:
+    """Inject custom CSS for medical research UI with IBM brand colors.
+
+    Optimized with caching to avoid re-injecting on every rerun.
+    """
     css_content = get_css_content()
     # Use a key to ensure CSS is only injected once per session
     if "_css_injected" not in st.session_state:
@@ -1050,7 +1069,8 @@ def inject_custom_css():
         st.markdown(css_content, unsafe_allow_html=True)
 
 
-def init_state():
+def init_state() -> None:
+    """Initialize Streamlit session state variables."""
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
     if "ingested_docs" not in st.session_state:
@@ -1063,8 +1083,15 @@ def init_state():
         st.session_state["report_text"] = ""
 
 
-def upload_section(ingestion: IngestionPipeline):
-    """File upload section in main area."""
+def upload_section(ingestion: IngestionPipeline) -> Optional[List]:
+    """Display file upload section in main area.
+
+    Args:
+        ingestion: IngestionPipeline instance for processing documents.
+
+    Returns:
+        List of uploaded files if any, None otherwise.
+    """
     has_documents = len(st.session_state.get("ingested_docs", [])) > 0
     
     # Check if answer generation is in progress (status callback indicates generation)
@@ -1150,8 +1177,15 @@ def upload_section(ingestion: IngestionPipeline):
     return uploaded_files
 
 
-def format_references_with_titles(sources: list[str]) -> str:
-    """Format references with document titles and download links."""
+def format_references_with_titles(sources: List[str]) -> str:
+    """Format references with document titles and download links.
+
+    Args:
+        sources: List of source URIs to format.
+
+    Returns:
+        Formatted references string with document titles.
+    """
     if not sources:
         return ""
     
@@ -1183,11 +1217,18 @@ def format_references_with_titles(sources: list[str]) -> str:
     return "\n".join(formatted_refs)
 
 
-def create_download_link(source_uri: str, ingestion: IngestionPipeline) -> str:
-    """Create a download link for a document from COS."""
-    import base64
-    import hashlib
-    
+def create_download_link(
+    source_uri: str, ingestion: IngestionPipeline
+) -> str:
+    """Create a download link for a document from COS.
+
+    Args:
+        source_uri: S3 URI of the document.
+        ingestion: IngestionPipeline instance for COS access.
+
+    Returns:
+        Download key for the document.
+    """
     # Create a unique key for this download
     download_key = hashlib.md5(source_uri.encode()).hexdigest()[:16]
     
@@ -1200,8 +1241,18 @@ def create_download_link(source_uri: str, ingestion: IngestionPipeline) -> str:
     return download_key
 
 
-def download_document_from_cos(download_key: str, ingestion: IngestionPipeline) -> bytes:
-    """Download a document from COS using the download key."""
+def download_document_from_cos(
+    download_key: str, ingestion: IngestionPipeline
+) -> bytes:
+    """Download a document from COS using the download key.
+
+    Args:
+        download_key: Download key stored in session state.
+        ingestion: IngestionPipeline instance for COS access.
+
+    Returns:
+        Document content as bytes, empty bytes if not found.
+    """
     if "download_cache" not in st.session_state:
         return b""
     
@@ -1227,7 +1278,11 @@ def download_document_from_cos(download_key: str, ingestion: IngestionPipeline) 
 
 
 def _clean_report_flags() -> None:
-    """Clear report flags for answers that are no longer in the report text."""
+    """Clear report flags for answers no longer in the report text.
+
+    Removes report flags from session state for answers that have been
+    removed from the report text by the user.
+    """
     report_text = st.session_state.get("report_text", "")
     
     # Get all report flags from session state
@@ -1278,8 +1333,16 @@ def _clean_report_flags() -> None:
             st.session_state.pop(key, None)
 
 
-def add_to_report(answer: str, sources: list[str], query: str = "") -> None:
-    """Add a verified answer to the report."""
+def add_to_report(
+    answer: str, sources: List[str], query: str = ""
+) -> None:
+    """Add a verified answer to the report.
+
+    Args:
+        answer: The answer text to add.
+        sources: List of source URIs for the answer.
+        query: Original query (optional, not included in report).
+    """
     if "report_text" not in st.session_state:
         st.session_state["report_text"] = ""
     
@@ -1318,10 +1381,15 @@ def add_to_report(answer: str, sources: list[str], query: str = "") -> None:
     st.session_state["report_text"] += entry
 
 
-def generate_bibliography(sources: list[str]) -> str:
-    """Generate a formatted bibliography from source URIs."""
-    import re
-    
+def generate_bibliography(sources: List[str]) -> str:
+    """Generate a formatted bibliography from source URIs.
+
+    Args:
+        sources: List of source URIs to include in bibliography.
+
+    Returns:
+        Formatted bibliography string in APA style.
+    """
     if not sources:
         return ""
     
@@ -1393,10 +1461,14 @@ def generate_bibliography(sources: list[str]) -> str:
 
 
 def export_report(format: str = "docx") -> bytes:
-    """Export the research report in the specified format."""
-    from datetime import datetime
-    import re
-    
+    """Export the research report in the specified format.
+
+    Args:
+        format: Export format, either "docx" or "md".
+
+    Returns:
+        Report content as bytes, empty bytes if report is empty.
+    """
     report_text = st.session_state.get("report_text", "")
     if not report_text:
         return b""
@@ -1482,10 +1554,11 @@ def export_report(format: str = "docx") -> bytes:
     return b""
 
 
-def report_page():
-    """Display and manage the research report page."""
-    from datetime import datetime
-    
+def report_page() -> None:
+    """Display and manage the research report page.
+
+    Provides UI for editing, exporting, and managing the synthesis report.
+    """
     st.header("Synthesis Studio")
     st.caption("Build your final deliverable from verified insights")
     
@@ -1554,8 +1627,11 @@ def report_page():
         st.rerun()
 
 
-def sidebar_documents():
-    """Compact sidebar showing only ingested documents - optimized."""
+def sidebar_documents() -> None:
+    """Display compact sidebar showing ingested documents.
+
+    Shows list of ingested documents with their chunk counts.
+    """
     st.sidebar.markdown("### Ingested Documents")
     
     ingested_docs = st.session_state.get("ingested_docs", [])
@@ -1588,8 +1664,15 @@ def sidebar_documents():
         st.sidebar.info("Upload documents to get started")
 
 
-def display_agent_trajectory(query: str, trajectory: list[dict]) -> None:
-    """Display the agent's step-by-step reasoning process."""
+def display_agent_trajectory(
+    query: str, trajectory: List[dict]
+) -> None:
+    """Display the agent's step-by-step reasoning process.
+
+    Args:
+        query: Original user query.
+        trajectory: List of trajectory steps showing reasoning process.
+    """
     with st.expander("Analysis Breakdown", expanded=False):
         st.caption(f"Showing step-by-step reasoning for: \"{query[:30]}...{query[-30:] if len(query) > 60 else query}\"")
         
@@ -1664,10 +1747,15 @@ def display_agent_trajectory(query: str, trajectory: list[dict]) -> None:
                         st.caption(details)
 
 
-def display_answer_with_verification(answer_text: str, verification_results: list[dict]) -> None:
-    """Display answer with verification status indicators."""
-    import re
-    
+def display_answer_with_verification(
+    answer_text: str, verification_results: List[dict]
+) -> None:
+    """Display answer with verification status indicators.
+
+    Args:
+        answer_text: The answer text to display.
+        verification_results: List of verification results with claim statuses.
+    """
     if not verification_results:
         st.markdown(answer_text)
         return
@@ -1799,8 +1887,16 @@ def display_answer_with_verification(answer_text: str, verification_results: lis
                 st.markdown(claim_html, unsafe_allow_html=True)
 
 
-def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
-    """Main chat interface."""
+def chat_ui(
+    query_pipeline: QueryPipeline,
+    ingestion: Optional[IngestionPipeline] = None,
+) -> None:
+    """Main chat interface for querying documents.
+
+    Args:
+        query_pipeline: QueryPipeline instance for processing queries.
+        ingestion: Optional IngestionPipeline for download functionality.
+    """
     st.header("MedCortex Analyst")
     
     if not st.session_state["ingested_docs"]:
@@ -1956,6 +2052,7 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
 
     # Chat input
     user_input = st.chat_input("Ask a research question about your documents…")
+    
     if user_input:
         st.session_state["messages"].append(("user", user_input))
         with st.chat_message("user"):
@@ -2087,10 +2184,27 @@ def chat_ui(query_pipeline: QueryPipeline, ingestion: IngestionPipeline = None):
             st.session_state["messages"].append(("assistant", full_response))
 
 
-def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryPipeline):
-    """Research Assistant page - separate route."""
+def research_assistant_page(
+    ingestion: IngestionPipeline, query_pipeline: QueryPipeline
+) -> None:
+    """Display the Research Assistant page.
+
+    Args:
+        ingestion: IngestionPipeline for document processing.
+        query_pipeline: QueryPipeline for query processing.
+    """
     st.title("MedCortex")
     st.caption("AI Research Analyst • Verifiable Synthesis • Powered by watsonx.ai")
+    
+    # Disclaimer under title
+    st.markdown(
+        '<p style="font-size: 0.85rem; color: var(--secondary-text); opacity: 0.6; margin-top: -0.8rem; margin-bottom: 1rem;">'
+        'While MedCortex strives for accuracy through verification and source attribution, '
+        'AI-generated content may contain errors. Please review all information and verify '
+        'critical findings against original sources.'
+        '</p>',
+        unsafe_allow_html=True
+    )
     
     # Upload section in main area (can be hidden)
     upload_section(ingestion)
@@ -2099,8 +2213,11 @@ def research_assistant_page(ingestion: IngestionPipeline, query_pipeline: QueryP
     chat_ui(query_pipeline, ingestion)
 
 
-def research_report_page():
-    """Research Report page - separate route."""
+def research_report_page() -> None:
+    """Display the Research Report page.
+
+    Shows the Synthesis Studio for building the final deliverable.
+    """
     st.title("MedCortex")
     st.caption("Synthesis Studio • Your workspace for curating evidence-based analysis")
     
@@ -2108,19 +2225,37 @@ def research_report_page():
 
 
 @st.cache_resource
-def get_settings():
-    """Cache settings loading to avoid reloading on every rerun."""
+def get_settings() -> Settings:
+    """Load and cache application settings.
+
+    Returns:
+        Settings instance loaded from environment variables.
+    """
     load_dotenv()
     return Settings.from_env()
 
 
 @st.cache_resource
-def get_pipelines(settings):
-    """Cache pipeline initialization to avoid recreating on every rerun."""
+def get_pipelines(
+    settings: Settings,
+) -> Tuple[IngestionPipeline, QueryPipeline]:
+    """Initialize and cache pipelines.
+
+    Args:
+        settings: Application settings.
+
+    Returns:
+        Tuple of (IngestionPipeline, QueryPipeline) instances.
+    """
     return IngestionPipeline(settings), QueryPipeline(settings)
 
 
-def main():
+def main() -> None:
+    """Main entry point for the Streamlit application.
+
+    Sets up the page configuration, initializes pipelines, and handles
+    navigation between different pages (Assistant and Report).
+    """
     # Set page config for MedCortex branding
     st.set_page_config(
         page_title="MedCortex | Analysis Workspace",

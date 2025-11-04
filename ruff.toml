@@ -1,0 +1,124 @@
+# Ruff configuration for MedCortex codebase
+# Follows PEP 8 and modern Python industry standards
+
+# Target Python version
+target-version = "py311"
+
+# Line length (PEP 8 recommends 79, but 88 is common for modern projects)
+line-length = 88
+
+# Exclude patterns
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env",
+    ".eggs",
+    "*.egg",
+    "build",
+    "dist",
+    ".ruff_cache",
+    "*.pyc",
+    ".pytest_cache",
+]
+
+# Enable specific rule sets
+[lint]
+# Enable all rule categories
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "RUF", # Ruff-specific rules
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate
+    "PD",  # pandas-vet
+    "PL",  # Pylint
+    "PERF", # Perflint
+    "TRY", # tryceratops
+    "FLY", # flynt
+    "NPY", # NumPy-specific rules
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "ICN", # flake8-import-conventions
+    "DTZ", # flake8-datetimez
+    "T20", # flake8-print
+    "ASYNC", # flake8-async
+    "S",   # flake8-bandit
+    "TID", # flake8-tidy-imports
+    "Q",   # flake8-quotes
+    "RUF", # Ruff-specific rules
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "T201",  # Print statements (acceptable for Streamlit apps)
+    "S101",  # Use of assert (acceptable in some contexts)
+    "S603",  # subprocess call (acceptable for CLI tools)
+    "S607",  # Starting a process with a partial executable path (acceptable in some contexts)
+    "PLR0913", # Too many arguments (acceptable for some functions)
+    "PLR0912", # Too many branches (acceptable for complex logic)
+    "PLR0915", # Too many statements (acceptable for complex functions)
+    "COM812", # Trailing comma missing (handled by formatter)
+    "ISC001", # Implicitly concatenated string literals (acceptable in some contexts)
+    "N806",  # Variable in function should be lowercase (acceptable for some cases)
+]
+
+# Allowed list for specific checks
+unfixable = [
+    "F841",  # Unused variable (may be intentional)
+]
+
+# Import sorting
+[lint.isort]
+known-first-party = ["app"]
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+# PEP 8 naming conventions
+[lint.pep8-naming]
+ignore-names = [
+    "doc_id",
+    "doc_ids",
+    "file_obj",
+    "s3_url",
+    "cos_client",
+    "watsonx_*",
+]
+
+# Type checking
+[lint.flake8-type-checking]
+strict = false
+
+# Formatting (Black-compatible)
+[format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces
+indent-style = "space"
+# Use 4 spaces per indentation level
+skip-magic-trailing-comma = false
+# Line ending style
+line-ending = "auto"
+
+# Specific rule configurations
+[lint.per-file-ignores]
+# Ignore some rules for __init__.py files
+"__init__.py" = ["F401"]  # Unused imports (acceptable for __init__.py)
+# Allow longer lines in test files
+"tests/**/*.py" = ["E501"]
+# Allow print statements in main.py (Streamlit app)
+"app/main.py" = ["T201"]
+

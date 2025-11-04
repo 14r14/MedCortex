@@ -1,7 +1,12 @@
-"""Orchestrator layer for agentic iterative framework."""
+"""Orchestrator layer for agentic iterative framework.
+
+This module provides the Orchestrator class that manages multi-step
+reasoning using query decomposition and iterative retrieval.
+"""
+
 import json
 import logging
-from typing import List, Optional, Tuple, Dict
+from typing import Dict, List, Optional, Tuple
 
 try:
     import streamlit as st
@@ -15,36 +20,34 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
-    """
-    Orchestrator layer that manages multi-step reasoning using QueryPipeline.
-    
+    """Orchestrator layer that manages multi-step reasoning using QueryPipeline.
+
     Based on i-MedRAG approach:
     1. Query decomposition into sub-questions
     2. Iterative retrieval for each sub-question
     3. Final synthesis of all evidence
     """
-    
-    def __init__(self, settings: Settings, query_pipeline):
-        """
-        Initialize orchestrator.
-        
+
+    def __init__(self, settings: Settings, query_pipeline) -> None:
+        """Initialize orchestrator.
+
         Args:
-            settings: Application settings
-            query_pipeline: QueryPipeline instance to use for answering sub-questions
+            settings: Application settings.
+            query_pipeline: QueryPipeline instance to use for answering
+                sub-questions.
         """
         self.settings = settings
         self.query_pipeline = query_pipeline
         self.gen = GeneratorClient(settings)
     
     def decompose_query(self, query: str) -> List[str]:
-        """
-        Decompose a complex query into sub-questions.
-        
+        """Decompose a complex query into sub-questions.
+
         Args:
-            query: Original complex query
-            
+            query: Original complex query.
+
         Returns:
-            List of sub-questions
+            List of sub-questions.
         """
         prompt = """You are an expert medical research assistant. Deconstruct the following complex user query into a series of simple, sequential, and answerable sub-questions that will enable a comprehensive answer for medical researchers.
 
@@ -85,15 +88,14 @@ Sub-questions:""".format(query=query)
             logger.warning(f"Query decomposition failed: {e}, using original query")
             return [query]
     
-    def route_query(self, query: str) -> List[dict]:
-        """
-        Route query: decompose and classify each sub-question as TEXT or TABLE.
-        
+    def route_query(self, query: str) -> List[Dict]:
+        """Route query: decompose and classify each sub-question as TEXT or TABLE.
+
         Args:
-            query: Original query
-            
+            query: Original query.
+
         Returns:
-            List of dicts with 'question' and 'type' ('TEXT' or 'TABLE')
+            List of dicts with 'question' and 'type' ('TEXT' or 'TABLE').
         """
         prompt = """You are a research query router. Deconstruct the user query into sub-questions. For each sub-question, classify it as either TEXT (for conceptual, procedural, or discussion-based info) or TABLE (for quantitative data, statistics, p-values, or comparisons).
 
@@ -185,21 +187,25 @@ Only return the JSON list, nothing else:""".format(query=query)
             sub_questions = self.decompose_query(query)
             return [{"question": sq, "type": "TEXT"} for sq in sub_questions]
     
-    def answer_iteratively(self, query: str, allowed_doc_ids: Optional[List[str]] = None, 
-                           show_trajectory: bool = True,
-                           status_callback: Optional[callable] = None) -> Tuple[str, List[str], Optional[List[Dict]]]:
-        """
-        Answer query using iterative decomposition and retrieval.
-        
+    def answer_iteratively(
+        self,
+        query: str,
+        allowed_doc_ids: Optional[List[str]] = None,
+        show_trajectory: bool = True,
+        status_callback: Optional[callable] = None,
+    ) -> Tuple[str, List[str], Optional[List[Dict]]]:
+        """Answer query using iterative decomposition and retrieval.
+
         Args:
-            query: Original query
-            allowed_doc_ids: Optional list of allowed document IDs
-            show_trajectory: Whether to collect trajectory information
-            status_callback: Optional callback function(status_text) to update UI status
-            
+            query: Original query.
+            allowed_doc_ids: Optional list of allowed document IDs.
+            show_trajectory: Whether to collect trajectory information.
+            status_callback: Optional callback function(status_text) to update
+                UI status.
+
         Returns:
-            Tuple of (final_answer, source_uris, trajectory_info)
-            trajectory_info contains step-by-step reasoning process
+            Tuple of (final_answer, source_uris, trajectory_info) where
+            trajectory_info contains step-by-step reasoning process.
         """
         trajectory: Optional[List[Dict]] = [] if show_trajectory else None
         
@@ -464,11 +470,20 @@ Synthesized Answer:""".format(
                 })
             return final_answer, list(dict.fromkeys(all_sources)), trajectory
     
-    def _get_source_chunks_for_query(self, question: str, allowed_doc_ids: Optional[List[str]]) -> List[str]:
-        """
-        Get source chunks for a query (for verification purposes).
-        
-        This performs a quick retrieval to get the chunks without generating an answer.
+    def _get_source_chunks_for_query(
+        self, question: str, allowed_doc_ids: Optional[List[str]]
+    ) -> List[str]:
+        """Get source chunks for a query (for verification purposes).
+
+        This performs a quick retrieval to get the chunks without
+        generating an answer.
+
+        Args:
+            question: Query question.
+            allowed_doc_ids: Optional list of allowed document IDs.
+
+        Returns:
+            List of source chunk texts.
         """
         try:
             # Use the query pipeline's internal retrieval methods
